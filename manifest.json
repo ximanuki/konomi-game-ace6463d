@@ -2,7 +2,7 @@
   "name": "このみちゃんのゲーム",
   "short_name": "このみゲーム",
   "description": "このみちゃんのためのパズル＆えあわせゲーム",
-  "start_url": "./",
+  "start_url": "/konomi-game-ace6463d/",
   "display": "standalone",
   "background_color": "#ffecd2",
   "theme_color": "#e75480",

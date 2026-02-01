@@ -1,11 +1,14 @@
-const CACHE_NAME = 'konomi-game-v1';
+const CACHE_NAME = 'konomi-game-v2';
+const BASE_PATH = '/konomi-game-ace6463d';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/puzzle.html',
-  '/matching.html',
-  '/icon-192.png',
-  '/icon-512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/puzzle.html`,
+  `${BASE_PATH}/matching.html`,
+  `${BASE_PATH}/common.css`,
+  `${BASE_PATH}/sound.js`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`
 ];
 
 // Install
