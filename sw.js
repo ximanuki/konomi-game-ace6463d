@@ -11,6 +11,9 @@ const urlsToCache = [
   `${BASE_PATH}/drawing.html`,
   `${BASE_PATH}/colors.html`,
   `${BASE_PATH}/rhythm.html`,
+  `${BASE_PATH}/flowers.html`,
+  `${BASE_PATH}/achievements.html`,
+  `${BASE_PATH}/gallery.html`,
   `${BASE_PATH}/css/common.css`,
   `${BASE_PATH}/css/components.css`,
   `${BASE_PATH}/css/animations.css`,
@@ -18,6 +21,7 @@ const urlsToCache = [
   `${BASE_PATH}/js/utils.js`,
   `${BASE_PATH}/js/storage.js`,
   `${BASE_PATH}/js/particle.js`,
+  `${BASE_PATH}/js/achievements.js`,
   `${BASE_PATH}/assets/icons/icon-192.png`,
   `${BASE_PATH}/assets/icons/icon-512.png`
 ];

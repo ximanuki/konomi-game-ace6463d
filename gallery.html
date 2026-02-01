@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#A8D8FF">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <title>🎨 ギャラリー</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #E8F4FF 0%, #F4E8FF 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-md);
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+        }
+
+        .gallery-header {
+            width: 100%;
+            max-width: 343px;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-sm);
+            width: 100%;
+            max-width: 343px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .gallery-item:active {
+            transform: scale(0.95);
+        }
+
+        .gallery-item.empty {
+            background: linear-gradient(135deg, #F0F0F0, #E0E0E0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #999;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: var(--spacing-xl);
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 70vh;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .info-text {
+            font-size: var(--font-sm);
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: var(--spacing-md);
+        }
+    </style>
+</head>
+<body class="no-select">
+    <button class="fixed-btn back-btn" onclick="location.href='./index.html'" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+
+    <div class="gallery-header">
+        <h2 style="color: var(--primary-blue); margin-bottom: 10px;">🎨 ギャラリー</h2>
+        <p style="font-size: var(--font-lg); font-weight: bold; color: var(--primary-pink);">
+            おえかき: <span id="artCount">0</span>/10
+        </p>
+    </div>
+
+    <div class="gallery-grid" id="galleryGrid"></div>
+
+    <p class="info-text">タップでかくだい</p>
+
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/sound.js"></script>
+    <script src="./js/particle.js"></script>
+    <script src="./js/achievements.js"></script>
+    <script>
+        const soundBtn = document.getElementById('soundBtn');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const artCountEl = document.getElementById('artCount');
+
+        // サウンド設定
+        gameSound.enabled = GameSettings.getSoundEnabled();
+        soundBtn.textContent = gameSound.enabled ? '🔊' : '🔇';
+        soundBtn.onclick = () => {
+            const enabled = gameSound.toggle();
+            soundBtn.textContent = enabled ? '🔊' : '🔇';
+            GameSettings.setSoundEnabled(enabled);
+            if (enabled) gameSound.playTap();
+        };
+
+        // ギャラリー表示
+        function renderGallery() {
+            const artworks = GalleryManager.getAll();
+            const count = artworks.length;
+            const maxItems = GalleryManager.MAX_ITEMS;
+
+            artCountEl.textContent = count;
+
+            galleryGrid.innerHTML = '';
+
+            // 既存作品
+            artworks.forEach((artwork, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                
+                const img = document.createElement('img');
+                img.src = artwork.thumbnail;
+                img.alt = artwork.title;
+                
+                item.appendChild(img);
+                item.onclick = () => {
+                    gameSound.playTap();
+                    showLightbox(artwork);
+                };
+
+                galleryGrid.appendChild(item);
+            });
+
+            // 空のスロット
+            for (let i = count; i < maxItems; i++) {
+                const item = document.createElement('div');
+                item.className = 'gallery-item empty';
+                item.textContent = '➕';
+                galleryGrid.appendChild(item);
+            }
+        }
+
+        // ライトボックス表示
+        function showLightbox(artwork) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            
+            const img = document.createElement('img');
+            img.src = artwork.full;
+            img.alt = artwork.title;
+            
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'lightbox-buttons';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn btn-secondary';
+            closeBtn.textContent = 'とじる';
+            closeBtn.onclick = () => {
+                gameSound.playTap();
+                lightbox.remove();
+            };
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-primary';
+            deleteBtn.textContent = '🗑️ けす';
+            deleteBtn.onclick = () => {
+                gameSound.playTap();
+                showConfirm('このさくひんをけしていい？', () => {
+                    GalleryManager.delete(artwork.id);
+                    lightbox.remove();
+                    renderGallery();
+                    showToast('さくひんをけしたよ');
+                });
+            };
+            
+            buttonsDiv.appendChild(closeBtn);
+            buttonsDiv.appendChild(deleteBtn);
+            
+            lightbox.appendChild(img);
+            lightbox.appendChild(buttonsDiv);
+            
+            // 背景タップで閉じる
+            lightbox.onclick = (e) => {
+                if (e.target === lightbox) {
+                    gameSound.playTap();
+                    lightbox.remove();
+                }
+            };
+            
+            document.body.appendChild(lightbox);
+        }
+
+        renderGallery();
+        lockPortrait();
+    </script>
+</body>
+</html>

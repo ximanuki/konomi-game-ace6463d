@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#B8F0B8">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <title>🌸 おはなそだて</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #E8F4E8 0%, #F4FFE8 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-md);
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+        }
+
+        .garden {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .planter {
+            width: 100px;
+            height: 140px;
+            background: linear-gradient(135deg, #D2A679 0%, #A67C52 100%);
+            border-radius: var(--radius-md);
+            border: 3px solid #8B6F47;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: var(--spacing-sm);
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .planter:active {
+            transform: scale(0.95);
+        }
+
+        .planter.empty::after {
+            content: '➕';
+            font-size: 32px;
+            color: #666;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .flower {
+            font-size: 60px;
+            animation: float 3s ease-in-out infinite;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .growth-bar {
+            width: 80%;
+            height: 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: var(--spacing-xs);
+        }
+
+        .growth-fill {
+            height: 100%;
+            background: var(--primary-green);
+            transition: width 0.5s ease;
+        }
+
+        .water-btn {
+            background: linear-gradient(135deg, #4D96FF 0%, #6BB6FF 100%);
+            color: white;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .seed-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            max-width: 300px;
+        }
+
+        .seed-btn {
+            aspect-ratio: 1;
+            font-size: 32px;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seed-btn:active {
+            transform: scale(0.9);
+        }
+
+        .seed-btn.locked {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-md);
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: var(--spacing-sm);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: var(--font-xl);
+            font-weight: bold;
+            color: var(--primary-green);
+        }
+
+        .stat-label {
+            font-size: var(--font-xs);
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body class="no-select">
+    <button class="fixed-btn back-btn" onclick="location.href='./index.html'" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+
+    <h2 style="color: var(--primary-green); margin-bottom: 20px;">🌸 おはなそだて</h2>
+
+    <div class="garden" id="garden"></div>
+
+    <button class="btn water-btn" id="waterBtn">
+        💧 おみずをあげる
+    </button>
+
+    <div class="seed-selector" id="seedSelector"></div>
+
+    <div class="stats">
+        <h3 style="color: var(--primary-green); margin-bottom: 10px;">📊 とうけい</h3>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="harvestedCount">0</div>
+                <div class="stat-label">しゅうかく</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="speciesCount">0</div>
+                <div class="stat-label">しゅるい</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/sound.js"></script>
+    <script src="./js/particle.js"></script>
+    <script src="./js/achievements.js"></script>
+    <script>
+        const gardenEl = document.getElementById('garden');
+        const seedSelector = document.getElementById('seedSelector');
+        const waterBtn = document.getElementById('waterBtn');
+        const soundBtn = document.getElementById('soundBtn');
+        const harvestedCountEl = document.getElementById('harvestedCount');
+        const speciesCountEl = document.getElementById('speciesCount');
+
+        // サウンド設定
+        gameSound.enabled = GameSettings.getSoundEnabled();
+        soundBtn.textContent = gameSound.enabled ? '🔊' : '🔇';
+        soundBtn.onclick = () => {
+            const enabled = gameSound.toggle();
+            soundBtn.textContent = enabled ? '🔊' : '🔇';
+            GameSettings.setSoundEnabled(enabled);
+            if (enabled) gameSound.playTap();
+        };
+
+        // 花データ
+        const flowerTypes = {
+            sakura: { emoji: '🌸', name: 'さくら', unlocked: true },
+            tulip: { emoji: '🌷', name: 'チューリップ', unlocked: true },
+            sunflower: { emoji: '🌻', name: 'ひまわり', unlocked: false },
+            rose: { emoji: '🌹', name: 'バラ', unlocked: false },
+            bouquet: { emoji: '💐', name: 'ブーケ', unlocked: false }
+        };
+
+        // 成長段階
+        const growthStages = {
+            0: '🌱',  // 芽
+            33: '🌿', // 葉
+            66: '🌸', // 開花（デフォルト、後で変更）
+            100: '🌸' // 完全開花
+        };
+
+        const MAX_PLANTERS = 3;
+        let planters = [];
+        let selectedPlanter = null;
+        let selectedSeed = null;
+        let harvested = loadData('konomi_harvested', {});
+
+        // 初期化
+        function init() {
+            // アンロック状態を反映
+            const unlocks = loadData(STORAGE_KEYS.UNLOCKS, {});
+            if (unlocks.flowers) {
+                unlocks.flowers.forEach(id => {
+                    if (flowerTypes[id]) {
+                        flowerTypes[id].unlocked = true;
+                    }
+                });
+            }
+
+            // プランター読み込み
+            planters = loadData(STORAGE_KEYS.FLOWERS, []);
+            
+            // 成長チェック
+            planters.forEach(p => updateGrowth(p));
+
+            renderGarden();
+            renderSeedSelector();
+            updateStats();
+        }
+
+        // プランター描画
+        function renderGarden() {
+            gardenEl.innerHTML = '';
+            
+            for (let i = 0; i < MAX_PLANTERS; i++) {
+                const planter = planters[i];
+                const planterEl = document.createElement('div');
+                planterEl.className = planter ? 'planter' : 'planter empty';
+                planterEl.dataset.index = i;
+
+                if (planter) {
+                    const flowerType = flowerTypes[planter.type];
+                    const stage = getGrowthStage(planter.growth);
+                    const emoji = planter.bloomed ? flowerType.emoji : stage;
+
+                    planterEl.innerHTML = `
+                        <div class="flower">${emoji}</div>
+                        <div class="growth-bar">
+                            <div class="growth-fill" style="width: ${planter.growth}%"></div>
+                        </div>
+                    `;
+
+                    planterEl.onclick = () => {
+                        if (planter.bloomed) {
+                            harvest(i);
+                        } else {
+                            showToast('まださいてないよ！おみずをあげてね');
+                        }
+                    };
+                } else {
+                    planterEl.onclick = () => {
+                        selectedPlanter = i;
+                        showToast('うえたいたねをえらんでね');
+                    };
+                }
+
+                gardenEl.appendChild(planterEl);
+            }
+        }
+
+        // 種選択UI
+        function renderSeedSelector() {
+            seedSelector.innerHTML = '';
+            
+            Object.entries(flowerTypes).forEach(([id, flower]) => {
+                const btn = document.createElement('button');
+                btn.className = flower.unlocked ? 'seed-btn' : 'seed-btn locked';
+                btn.textContent = flower.emoji;
+                btn.title = flower.name;
+                btn.disabled = !flower.unlocked;
+
+                if (flower.unlocked) {
+                    btn.onclick = () => {
+                        if (selectedPlanter !== null) {
+                            plantSeed(selectedPlanter, id);
+                            selectedPlanter = null;
+                        } else {
+                            showToast('うえるばしょをえらんでね');
+                        }
+                    };
+                }
+
+                seedSelector.appendChild(btn);
+            });
+        }
+
+        // 種を植える
+        function plantSeed(index, type) {
+            const newPlant = {
+                id: `flower_${Date.now()}`,
+                type: type,
+                planted: new Date().toISOString(),
+                lastWatered: null,
+                growth: 0,
+                bloomed: false
+            };
+
+            planters[index] = newPlant;
+            savePlanters();
+            renderGarden();
+            gameSound.playTap();
+            showToast(`${flowerTypes[type].name}のたねをうえたよ！`);
+        }
+
+        // 水やり
+        waterBtn.onclick = () => {
+            gameSound.playTap();
+            
+            let watered = false;
+            const today = new Date().toISOString().split('T')[0];
+
+            planters.forEach(planter => {
+                if (!planter || planter.bloomed) return;
+
+                const lastWateredDate = planter.lastWatered?.split('T')[0];
+                if (lastWateredDate === today) return;
+
+                // 水やり実行
+                planter.lastWatered = new Date().toISOString();
+                planter.growth = Math.min(100, planter.growth + 33);
+
+                if (planter.growth >= 100 && !planter.bloomed) {
+                    planter.bloomed = true;
+                    setTimeout(() => {
+                        showBloomNotification(planter.type);
+                    }, 500);
+                }
+
+                watered = true;
+            });
+
+            if (watered) {
+                savePlanters();
+                renderGarden();
+                createHearts();
+                showToast('おみずをあげたよ！💧');
+            } else {
+                showToast('きょうはもうおみずをあげたよ！');
+            }
+        };
+
+        // 成長段階取得
+        function getGrowthStage(growth) {
+            if (growth >= 66) return '🌿';
+            if (growth >= 33) return '🌿';
+            return '🌱';
+        }
+
+        // 成長更新（時間経過）
+        function updateGrowth(planter) {
+            if (!planter || planter.bloomed) return;
+
+            const lastWatered = planter.lastWatered ? new Date(planter.lastWatered) : null;
+            if (!lastWatered) return;
+
+            const now = new Date();
+            const daysSince = Math.floor((now - lastWatered) / (1000 * 60 * 60 * 24));
+
+            // 1日1回の水やりで成長（自動成長はなし）
+        }
+
+        // 開花通知
+        function showBloomNotification(type) {
+            const flower = flowerTypes[type];
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <h2>🎉 おはながさいたよ！</h2>
+                <p style="font-size: 80px; margin: 20px 0;">${flower.emoji}</p>
+                <p style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
+                    ${flower.name}
+                </p>
+                <p>タップでしゅうかくしてね！</p>
+                <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">
+                    OK
+                </button>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            createStars();
+            gameSound.playClear();
+        }
+
+        // 収穫
+        function harvest(index) {
+            gameSound.playTap();
+            const planter = planters[index];
+            const flower = flowerTypes[planter.type];
+
+            showConfirm(`${flower.name}をしゅうかくする？`, () => {
+                // 収穫記録
+                if (!harvested[planter.type]) {
+                    harvested[planter.type] = 0;
+                }
+                harvested[planter.type]++;
+                saveData('konomi_harvested', harvested);
+
+                // プランター空にする
+                planters[index] = null;
+                savePlanters();
+                renderGarden();
+                updateStats();
+
+                // 実績チェック
+                const totalHarvested = Object.values(harvested).reduce((a, b) => a + b, 0);
+                
+                if (totalHarvested === 1 && !AchievementManager.isUnlocked('flower_first')) {
+                    AchievementManager.check('flower_first');
+                    setTimeout(() => AchievementManager.showNotification('flower_first'), 500);
+                }
+                if (totalHarvested === 5 && !AchievementManager.isUnlocked('flower_5')) {
+                    AchievementManager.check('flower_5');
+                    setTimeout(() => AchievementManager.showNotification('flower_5'), 500);
+                }
+                if (totalHarvested === 10 && !AchievementManager.isUnlocked('flower_10')) {
+                    AchievementManager.check('flower_10');
+                    setTimeout(() => AchievementManager.showNotification('flower_10'), 500);
+                }
+
+                createConfetti();
+                gameSound.playCorrect();
+                showToast(`${flower.name}をしゅうかくしたよ！${flower.emoji}`);
+            });
+        }
+
+        // 統計更新
+        function updateStats() {
+            const total = Object.values(harvested).reduce((a, b) => a + b, 0);
+            const species = Object.keys(harvested).length;
+
+            harvestedCountEl.textContent = total;
+            speciesCountEl.textContent = species;
+        }
+
+        // 保存
+        function savePlanters() {
+            saveData(STORAGE_KEYS.FLOWERS, planters);
+        }
+
+        // 初期化
+        init();
+        lockPortrait();
+    </script>
+</body>
+</html>

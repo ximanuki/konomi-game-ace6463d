@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FFD700">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <title>🏆 じっせき</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #FFF8DC 0%, #FFE8F5 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-md);
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+        }
+
+        .progress-header {
+            width: 100%;
+            max-width: 343px;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #F0F0F0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: var(--spacing-md) 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            transition: width 0.5s ease;
+        }
+
+        .achievement-list {
+            width: 100%;
+            max-width: 343px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .achievement-item {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .achievement-item.locked {
+            opacity: 0.6;
+        }
+
+        .achievement-icon {
+            font-size: 48px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #FFE8F5, #FFF8DC);
+            border-radius: var(--radius-md);
+            flex-shrink: 0;
+        }
+
+        .achievement-icon.unlocked {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .achievement-info {
+            flex: 1;
+        }
+
+        .achievement-name {
+            font-size: var(--font-md);
+            font-weight: bold;
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .achievement-desc {
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+        }
+
+        .achievement-reward {
+            font-size: var(--font-xs);
+            color: #FFD700;
+            margin-top: var(--spacing-xs);
+        }
+    </style>
+</head>
+<body class="no-select">
+    <button class="fixed-btn back-btn" onclick="location.href='./index.html'" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+
+    <div class="progress-header">
+        <h2 style="color: #FFD700; margin-bottom: 10px;">🏆 じっせき</h2>
+        <p style="font-size: var(--font-lg); font-weight: bold; color: var(--primary-pink);">
+            <span id="unlockedCount">0</span>/<span id="totalCount">30</span>
+        </p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <p style="font-size: var(--font-sm); color: var(--text-muted);">
+            たっせいりつ: <span id="percentage">0</span>%
+        </p>
+    </div>
+
+    <div class="achievement-list" id="achievementList"></div>
+
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/sound.js"></script>
+    <script src="./js/particle.js"></script>
+    <script src="./js/achievements.js"></script>
+    <script>
+        const soundBtn = document.getElementById('soundBtn');
+        const achievementList = document.getElementById('achievementList');
+        const unlockedCountEl = document.getElementById('unlockedCount');
+        const totalCountEl = document.getElementById('totalCount');
+        const progressFillEl = document.getElementById('progressFill');
+        const percentageEl = document.getElementById('percentage');
+
+        // サウンド設定
+        gameSound.enabled = GameSettings.getSoundEnabled();
+        soundBtn.textContent = gameSound.enabled ? '🔊' : '🔇';
+        soundBtn.onclick = () => {
+            const enabled = gameSound.toggle();
+            soundBtn.textContent = enabled ? '🔊' : '🔇';
+            GameSettings.setSoundEnabled(enabled);
+            if (enabled) gameSound.playTap();
+        };
+
+        // 実績表示
+        function renderAchievements() {
+            const achievements = AchievementManager.getAll();
+            const unlocked = achievements.filter(a => a.unlocked).length;
+            const total = achievements.length;
+            const percentage = Math.floor((unlocked / total) * 100);
+
+            // 進捗更新
+            unlockedCountEl.textContent = unlocked;
+            totalCountEl.textContent = total;
+            progressFillEl.style.width = `${percentage}%`;
+            percentageEl.textContent = percentage;
+
+            // リスト生成
+            achievementList.innerHTML = '';
+            achievements.forEach(achievement => {
+                const item = document.createElement('div');
+                item.className = achievement.unlocked ? 'achievement-item' : 'achievement-item locked';
+                
+                item.innerHTML = `
+                    <div class="achievement-icon ${achievement.unlocked ? 'unlocked' : ''}">
+                        ${achievement.unlocked ? '🏆' : '🔒'}
+                    </div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">
+                            ${achievement.unlocked ? achievement.name : '？？？'}
+                        </div>
+                        <div class="achievement-desc">
+                            ${achievement.unlocked ? achievement.desc : 'まだアンロックされていません'}
+                        </div>
+                        ${achievement.unlocked ? `<div class="achievement-reward">ごうほう: ${achievement.reward}</div>` : ''}
+                        ${achievement.unlocked && achievement.date ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">${new Date(achievement.date).toLocaleDateString('ja-JP')}</div>` : ''}
+                    </div>
+                `;
+
+                achievementList.appendChild(item);
+            });
+        }
+
+        renderAchievements();
+        lockPortrait();
+    </script>
+</body>
+</html>
