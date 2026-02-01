@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#A8D8FF">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <title>🎨 おえかき</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #E8F4FF 0%, #F4E8FF 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-md);
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+        }
+
+        #drawCanvas {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            background: white;
+            touch-action: none;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 360px;
+        }
+
+        .color-btn, .tool-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            border: 3px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .color-btn:active, .tool-btn:active {
+            transform: scale(0.9);
+        }
+
+        .color-btn.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        .tool-btn {
+            background: white;
+        }
+
+        .tool-btn.active {
+            background: var(--primary-pink);
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            max-width: 360px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: var(--spacing-md);
+            font-size: var(--font-sm);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="no-select">
+    <button class="fixed-btn back-btn" onclick="location.href='./index.html'" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+
+    <canvas id="drawCanvas" width="360" height="400"></canvas>
+
+    <!-- カラーパレット -->
+    <div class="toolbar" id="colorPalette">
+        <button class="color-btn active" data-color="#FF6B6B" style="background: #FF6B6B;" title="あか"></button>
+        <button class="color-btn" data-color="#FFA500" style="background: #FFA500;" title="オレンジ"></button>
+        <button class="color-btn" data-color="#FFD93D" style="background: #FFD93D;" title="きいろ"></button>
+        <button class="color-btn" data-color="#6BCB77" style="background: #6BCB77;" title="みどり"></button>
+        <button class="color-btn" data-color="#4D96FF" style="background: #4D96FF;" title="あお"></button>
+        <button class="color-btn" data-color="#9D4EDD" style="background: #9D4EDD;" title="むらさき"></button>
+        <button class="color-btn" data-color="#000000" style="background: #000000;" title="くろ"></button>
+        <button class="color-btn" data-color="#FFFFFF" style="background: #FFFFFF; border: 2px solid #ccc;" title="しろ"></button>
+    </div>
+
+    <!-- ツール -->
+    <div class="toolbar">
+        <button class="tool-btn active" data-tool="pen" title="ペン">✏️</button>
+        <button class="tool-btn" data-tool="eraser" title="けしゴム">🗑️</button>
+        <button class="tool-btn" data-size="5" title="ほそい">━</button>
+        <button class="tool-btn active" data-size="10" title="ふつう">═</button>
+        <button class="tool-btn" data-size="20" title="ふとい">▬</button>
+    </div>
+
+    <!-- スタンプ -->
+    <div class="toolbar" id="stampPalette">
+        <button class="tool-btn" data-stamp="⭐" title="ほし">⭐</button>
+        <button class="tool-btn" data-stamp="❤️" title="ハート">❤️</button>
+        <button class="tool-btn" data-stamp="😊" title="えがお">😊</button>
+        <button class="tool-btn" data-stamp="🌸" title="さくら">🌸</button>
+        <button class="tool-btn" data-stamp="🐱" title="ねこ">🐱</button>
+        <button class="tool-btn" data-stamp="🍎" title="りんご">🍎</button>
+    </div>
+
+    <!-- アクション -->
+    <div class="action-buttons">
+        <button class="btn btn-secondary action-btn" id="clearBtn">ぜんぶけす</button>
+        <button class="btn btn-primary action-btn" id="saveBtn">ほぞん</button>
+    </div>
+
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/sound.js"></script>
+    <script src="./js/particle.js"></script>
+    <script src="./js/achievements.js"></script>
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const soundBtn = document.getElementById('soundBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
+
+        // サウンド設定
+        gameSound.enabled = GameSettings.getSoundEnabled();
+        soundBtn.textContent = gameSound.enabled ? '🔊' : '🔇';
+        soundBtn.onclick = () => {
+            const enabled = gameSound.toggle();
+            soundBtn.textContent = enabled ? '🔊' : '🔇';
+            GameSettings.setSoundEnabled(enabled);
+            if (enabled) gameSound.playTap();
+        };
+
+        // 描画設定
+        let currentColor = '#FF6B6B';
+        let currentSize = 10;
+        let currentTool = 'pen';
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let usedColors = new Set();
+
+        // キャンバス初期化
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 前回の作品を復元
+        const lastDrawing = GameProgress.getDrawing();
+        if (lastDrawing) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = lastDrawing;
+        }
+
+        // カラー選択
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentColor = btn.dataset.color;
+                currentTool = 'pen';
+                gameSound.playTap();
+            });
+        });
+
+        // ツール選択
+        document.querySelectorAll('[data-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                gameSound.playTap();
+            });
+        });
+
+        // サイズ選択
+        document.querySelectorAll('[data-size]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSize = parseInt(btn.dataset.size);
+                gameSound.playTap();
+            });
+        });
+
+        // スタンプ選択
+        document.querySelectorAll('[data-stamp]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stamp = btn.dataset.stamp;
+                currentTool = 'stamp';
+                currentStamp = stamp;
+                gameSound.playTap();
+            });
+        });
+
+        let currentStamp = null;
+
+        // 描画開始
+        canvas.addEventListener('pointerdown', (e) => {
+            const pos = getPos(e);
+            const rect = canvas.getBoundingClientRect();
+            lastX = pos.x - rect.left;
+            lastY = pos.y - rect.top;
+
+            if (currentTool === 'stamp' && currentStamp) {
+                // スタンプ配置
+                ctx.font = '48px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(currentStamp, lastX, lastY);
+                gameSound.playTap();
+                autoSave();
+            } else {
+                isDrawing = true;
+                draw(lastX, lastY);
+            }
+        });
+
+        // 描画中
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDrawing) return;
+
+            const pos = getPos(e);
+            const rect = canvas.getBoundingClientRect();
+            const x = pos.x - rect.left;
+            const y = pos.y - rect.top;
+
+            draw(x, y);
+            lastX = x;
+            lastY = y;
+        });
+
+        // 描画終了
+        canvas.addEventListener('pointerup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                autoSave();
+            }
+        });
+
+        canvas.addEventListener('pointerleave', () => {
+            isDrawing = false;
+        });
+
+        // 描画処理
+        function draw(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+
+            if (currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = 20;
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = currentSize;
+                usedColors.add(currentColor);
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        // 自動保存
+        let autoSaveTimer;
+        function autoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const dataURL = canvas.toDataURL('image/png');
+                GameProgress.saveDrawing(dataURL);
+            }, 2000);
+        }
+
+        // 全消去
+        clearBtn.onclick = () => {
+            gameSound.playTap();
+            showConfirm('ほんとうに ぜんぶ けしていい？', () => {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                usedColors.clear();
+                GameProgress.clearDrawing();
+                gameSound.playTap();
+            });
+        };
+
+        // 保存
+        saveBtn.onclick = () => {
+            gameSound.playTap();
+            const dataURL = canvas.toDataURL('image/png');
+            const id = GalleryManager.save(dataURL);
+            
+            createSparkle(canvas.offsetLeft + canvas.width / 2, canvas.offsetTop + canvas.height / 2);
+            showToast('さくひんを ほぞんしたよ！');
+            
+            // 全色使用チェック
+            if (usedColors.size >= 8 && !AchievementManager.isUnlocked('draw_all_colors')) {
+                AchievementManager.check('draw_all_colors');
+                setTimeout(() => AchievementManager.showNotification('draw_all_colors'), 500);
+            }
+        };
+
+        lockPortrait();
+    </script>
+</body>
+</html>

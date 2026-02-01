@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>いろあわせ - このみちゃんのゲーム</title>
+  <link rel="stylesheet" href="./css/common.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/animations.css">
+  <style>
+    .game-container {
+      background: var(--bg-gradient-3);
+    }
+    .coming-soon {
+      text-align: center;
+      padding: var(--spacing-xl);
+      margin-top: 100px;
+    }
+    .coming-soon-icon {
+      font-size: 120px;
+      margin-bottom: var(--spacing-lg);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .coming-soon-title {
+      font-size: var(--font-2xl);
+      font-weight: bold;
+      color: var(--primary-pink);
+      margin-bottom: var(--spacing-md);
+    }
+    .coming-soon-text {
+      font-size: var(--font-lg);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <button class="back-btn" onclick="location.href='./index.html'">←</button>
+    <button class="sound-toggle" id="soundToggle">🔊</button>
+    
+    <div class="coming-soon">
+      <div class="coming-soon-icon">🌈</div>
+      <h1 class="coming-soon-title">いろあわせ</h1>
+      <p class="coming-soon-text">
+        じゅんび ちゅうだよ！<br>
+        もう すこし まっててね 💕
+      </p>
+    </div>
+  </div>
+  
+  <script src="./js/sound.js"></script>
+  <script src="./js/utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof SoundManager !== 'undefined') {
+        window.soundManager = new SoundManager();
+        const soundToggle = document.getElementById('soundToggle');
+        soundToggle.textContent = window.soundManager.enabled ? '🔊' : '🔇';
+        soundToggle.addEventListener('click', () => {
+          window.soundManager.toggle();
+          soundToggle.textContent = window.soundManager.enabled ? '🔊' : '🔇';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

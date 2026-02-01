@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🎵 リズムゲーム - このみちゃんのゲーム</title>
+  
+  <!-- 共通CSS -->
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  
+  <style>
+    body {
+      background: linear-gradient(135deg, #E8F4FF 0%, #F4E8FF 100%);
+      overflow: hidden;
+    }
+
+    /* ゲームコンテナ */
+    .game-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Canvas（ノーツ落下エリア） */
+    #gameCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* 判定ライン */
+    .judge-line {
+      position: absolute;
+      bottom: 100px;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #FF9EC8, transparent);
+      box-shadow: 0 0 10px rgba(255, 158, 200, 0.5);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* 判定テキスト */
+    .judge-text {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      font-weight: bold;
+      color: #FF9EC8;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .judge-text.show {
+      opacity: 1;
+      animation: judgeFlash 0.5s ease;
+    }
+
+    .judge-text.perfect {
+      color: #FFD700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    }
+
+    .judge-text.good {
+      color: #B8F0B8;
+    }
+
+    .judge-text.miss {
+      color: #999999;
+    }
+
+    /* 曲選択モーダル */
+    .song-select {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .song-select-modal {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 340px;
+      width: 90%;
+      animation: bounceIn 0.5s ease;
+    }
+
+    .song-select h2 {
+      font-size: 28px;
+      color: var(--primary-pink);
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .song-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .song-btn {
+      background: linear-gradient(135deg, #FFE8F5 0%, #E8F4FF 100%);
+      border: 2px solid var(--primary-pink);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text-primary);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .song-btn:active {
+      transform: scale(0.96);
+    }
+
+    .song-emoji {
+      font-size: 32px;
+    }
+
+    .song-info {
+      flex: 1;
+    }
+
+    .song-name {
+      font-size: 18px;
+      color: var(--primary-pink);
+      margin-bottom: 4px;
+    }
+
+    .song-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* カウントダウン */
+    .countdown {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 80px;
+      font-weight: bold;
+      color: var(--primary-pink);
+      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 100;
+      animation: pulse 1s ease;
+    }
+
+    /* リザルトモーダル */
+    .result-modal .stars {
+      font-size: 48px;
+      margin: 16px 0;
+    }
+
+    .result-stats {
+      background: #F5F5F5;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: left;
+    }
+
+    .result-stats div {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+    .result-stats .label {
+      color: var(--text-secondary);
+    }
+
+    .result-stats .value {
+      font-weight: bold;
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <!-- 固定ボタン -->
+    <button class="fixed-btn back-btn" id="backBtn" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+
+    <!-- スコア表示 -->
+    <div class="score-display" id="scoreDisplay">🎵 0てん</div>
+
+    <!-- Canvas（ノーツ落下） -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 判定ライン -->
+    <div class="judge-line"></div>
+
+    <!-- 判定テキスト -->
+    <div class="judge-text" id="judgeText"></div>
+  </div>
+
+  <!-- 曲選択モーダル -->
+  <div class="song-select" id="songSelect">
+    <div class="song-select-modal">
+      <h2>🎵 きょくをえらんでね！</h2>
+      <div class="song-list">
+        <button class="song-btn" data-song="0">
+          <div class="song-emoji">⭐</div>
+          <div class="song-info">
+            <div class="song-name">きらきらぼし</div>
+            <div class="song-meta">かんたん・30びょう</div>
+          </div>
+        </button>
+        <button class="song-btn" data-song="1">
+          <div class="song-emoji">🦋</div>
+          <div class="song-info">
+            <div class="song-name">ちょうちょ</div>
+            <div class="song-meta">かんたん・30びょう</div>
+          </div>
+        </button>
+        <button class="song-btn" data-song="2">
+          <div class="song-emoji">🐸</div>
+          <div class="song-info">
+            <div class="song-name">かえるのうた</div>
+            <div class="song-meta">かんたん・30びょう</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 共通JS -->
+  <script src="js/sound.js"></script>
+  <script src="js/utils.js"></script>
+
+  <!-- ゲームロジック -->
+  <script>
+    // ========== 設定 ==========
+    const CONFIG = {
+      JUDGE_LINE_Y: 567, // 判定ラインY座標（下から100px）
+      PERFECT_TIMING: 50, // Perfect判定範囲（±50ms）
+      GOOD_TIMING: 150, // Good判定範囲（±150ms）
+      NOTE_SIZE: 48, // ノーツサイズ
+      NOTE_FALL_DURATION: 3000, // ノーツが落ちる時間（3秒）
+      SPAWN_OFFSET: -100, // ノーツ生成位置（画面上）
+    };
+
+    // ========== 曲データ ==========
+    const SONGS = [
+      {
+        name: 'きらきらぼし',
+        emoji: '⭐',
+        bpm: 60,
+        notes: [
+          // ド ド ソ ソ ラ ラ ソー
+          { time: 0, type: '⭐', pitch: 261.63 },
+          { time: 1000, type: '⭐', pitch: 261.63 },
+          { time: 2000, type: '❤️', pitch: 392.00 },
+          { time: 3000, type: '❤️', pitch: 392.00 },
+          { time: 4000, type: '🌸', pitch: 440.00 },
+          { time: 5000, type: '🌸', pitch: 440.00 },
+          { time: 6000, type: '❤️', pitch: 392.00 },
+          // ファ ファ ミ ミ レ レ ドー
+          { time: 8000, type: '⭐', pitch: 349.23 },
+          { time: 9000, type: '⭐', pitch: 349.23 },
+          { time: 10000, type: '❤️', pitch: 329.63 },
+          { time: 11000, type: '❤️', pitch: 329.63 },
+          { time: 12000, type: '🌸', pitch: 293.66 },
+          { time: 13000, type: '🌸', pitch: 293.66 },
+          { time: 14000, type: '⭐', pitch: 261.63 },
+        ]
+      },
+      {
+        name: 'ちょうちょ',
+        emoji: '🦋',
+        bpm: 90,
+        notes: [
+          // ソ ミ ミ ファ レ レ
+          { time: 0, type: '🌸', pitch: 392.00 },
+          { time: 666, type: '❤️', pitch: 329.63 },
+          { time: 1333, type: '❤️', pitch: 329.63 },
+          { time: 2000, type: '⭐', pitch: 349.23 },
+          { time: 2666, type: '⭐', pitch: 293.66 },
+          { time: 3333, type: '⭐', pitch: 293.66 },
+          // ド レ ミ ファ ソソソ
+          { time: 4000, type: '⭐', pitch: 261.63 },
+          { time: 4666, type: '❤️', pitch: 293.66 },
+          { time: 5333, type: '❤️', pitch: 329.63 },
+          { time: 6000, type: '🌸', pitch: 349.23 },
+          { time: 6666, type: '🌸', pitch: 392.00 },
+          { time: 7333, type: '🌸', pitch: 392.00 },
+          { time: 8000, type: '🌸', pitch: 392.00 },
+        ]
+      },
+      {
+        name: 'かえるのうた',
+        emoji: '🐸',
+        bpm: 120,
+        notes: [
+          // ド レ ミ ファ ミー レー ド
+          { time: 0, type: '⭐', pitch: 261.63 },
+          { time: 500, type: '⭐', pitch: 293.66 },
+          { time: 1000, type: '❤️', pitch: 329.63 },
+          { time: 1500, type: '❤️', pitch: 349.23 },
+          { time: 2000, type: '❤️', pitch: 329.63 },
+          { time: 3000, type: '⭐', pitch: 293.66 },
+          { time: 4000, type: '⭐', pitch: 261.63 },
+          // ミ ファ ソ ラ ソー ファー ミ
+          { time: 5000, type: '❤️', pitch: 329.63 },
+          { time: 5500, type: '❤️', pitch: 349.23 },
+          { time: 6000, type: '🌸', pitch: 392.00 },
+          { time: 6500, type: '🌸', pitch: 440.00 },
+          { time: 7000, type: '🌸', pitch: 392.00 },
+          { time: 8000, type: '❤️', pitch: 349.23 },
+          { time: 9000, type: '❤️', pitch: 329.63 },
+        ]
+      }
+    ];
+
+    // ========== ゲーム状態 ==========
+    class RhythmGame {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resizeCanvas();
+        
+        this.currentSong = null;
+        this.notes = [];
+        this.activeNotes = [];
+        this.score = 0;
+        this.combo = 0;
+        this.stats = { perfect: 0, good: 0, miss: 0 };
+        this.startTime = 0;
+        this.isPlaying = false;
+        this.audioContext = null;
+        this.scheduledNotes = new Set();
+        
+        this.setupEvents();
+      }
+
+      resizeCanvas() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+      }
+
+      setupEvents() {
+        // 画面タップで判定
+        this.canvas.addEventListener('touchstart', (e) => this.handleTap(e));
+        this.canvas.addEventListener('click', (e) => this.handleTap(e));
+        
+        // リサイズ対応
+        window.addEventListener('resize', () => this.resizeCanvas());
+      }
+
+      startSong(songIndex) {
+        this.currentSong = SONGS[songIndex];
+        this.notes = [...this.currentSong.notes];
+        this.activeNotes = [];
+        this.score = 0;
+        this.combo = 0;
+        this.stats = { perfect: 0, good: 0, miss: 0 };
+        this.scheduledNotes = new Set();
+        
+        // AudioContext初期化
+        gameSound.init();
+        this.audioContext = gameSound.audioContext;
+        
+        // カウントダウン
+        this.showCountdown(() => {
+          this.isPlaying = true;
+          this.startTime = performance.now();
+          this.gameLoop();
+        });
+      }
+
+      showCountdown(callback) {
+        const counts = ['3', '2', '1', 'GO!'];
+        let index = 0;
+
+        const showNext = () => {
+          if (index >= counts.length) {
+            callback();
+            return;
+          }
+
+          const countdown = document.createElement('div');
+          countdown.className = 'countdown';
+          countdown.textContent = counts[index];
+          document.body.appendChild(countdown);
+
+          gameSound.playTap();
+
+          setTimeout(() => {
+            countdown.remove();
+            index++;
+            showNext();
+          }, 1000);
+        };
+
+        showNext();
+      }
+
+      gameLoop() {
+        if (!this.isPlaying) return;
+
+        const currentTime = performance.now() - this.startTime;
+        
+        // ノーツ生成
+        this.spawnNotes(currentTime);
+        
+        // ノーツ更新
+        this.updateNotes(currentTime);
+        
+        // 描画
+        this.render();
+        
+        // ゲーム終了チェック
+        if (this.checkGameEnd(currentTime)) {
+          this.endGame();
+          return;
+        }
+        
+        requestAnimationFrame(() => this.gameLoop());
+      }
+
+      spawnNotes(currentTime) {
+        this.notes.forEach((note, index) => {
+          const spawnTime = note.time - CONFIG.NOTE_FALL_DURATION;
+          
+          if (currentTime >= spawnTime && !this.scheduledNotes.has(index)) {
+            this.activeNotes.push({
+              ...note,
+              id: index,
+              x: this.canvas.width / 2,
+              y: CONFIG.SPAWN_OFFSET,
+              spawnTime: currentTime,
+              judged: false
+            });
+            this.scheduledNotes.add(index);
+            
+            // 音符の音を再生
+            this.playNoteSound(note.pitch, note.time);
+          }
+        });
+      }
+
+      playNoteSound(pitch, scheduledTime) {
+        if (!this.audioContext) return;
+        
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(gameSound.gainNode);
+        
+        osc.frequency.value = pitch;
+        osc.type = 'sine';
+        
+        const startTime = this.audioContext.currentTime + (scheduledTime / 1000);
+        gain.gain.setValueAtTime(0.15, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+      }
+
+      updateNotes(currentTime) {
+        this.activeNotes = this.activeNotes.filter(note => {
+          if (note.judged) return false;
+          
+          // ノーツの位置計算
+          const elapsed = currentTime - note.spawnTime;
+          const progress = elapsed / CONFIG.NOTE_FALL_DURATION;
+          note.y = CONFIG.SPAWN_OFFSET + (CONFIG.JUDGE_LINE_Y - CONFIG.SPAWN_OFFSET + 100) * progress;
+          
+          // 画面外に出たらミス
+          if (note.y > CONFIG.JUDGE_LINE_Y + 100) {
+            this.judgeNote(note, 'miss');
+            return false;
+          }
+          
+          return true;
+        });
+      }
+
+      handleTap(e) {
+        if (!this.isPlaying) return;
+        e.preventDefault();
+        
+        const currentTime = performance.now() - this.startTime;
+        
+        // 一番近いノーツを判定
+        let closestNote = null;
+        let minDistance = Infinity;
+        
+        this.activeNotes.forEach(note => {
+          if (note.judged) return;
+          
+          const distance = Math.abs(note.y - CONFIG.JUDGE_LINE_Y);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestNote = note;
+          }
+        });
+        
+        if (closestNote && minDistance < 100) {
+          const timeDiff = Math.abs((closestNote.time) - currentTime);
+          
+          if (timeDiff <= CONFIG.PERFECT_TIMING) {
+            this.judgeNote(closestNote, 'perfect');
+          } else if (timeDiff <= CONFIG.GOOD_TIMING) {
+            this.judgeNote(closestNote, 'good');
+          } else {
+            this.judgeNote(closestNote, 'miss');
+          }
+        }
+      }
+
+      judgeNote(note, result) {
+        note.judged = true;
+        this.stats[result]++;
+        
+        let points = 0;
+        let text = '';
+        
+        if (result === 'perfect') {
+          points = 10;
+          text = 'パーフェクト！';
+          this.combo++;
+          gameSound.playJudge('perfect');
+          this.createParticles(note.x, CONFIG.JUDGE_LINE_Y, '⭐');
+        } else if (result === 'good') {
+          points = 5;
+          text = 'グッド！';
+          this.combo++;
+          gameSound.playJudge('good');
+        } else {
+          points = 0;
+          text = '';
+          this.combo = 0;
+          gameSound.playJudge('miss');
+        }
+        
+        this.score += points;
+        this.updateUI(text, result);
+      }
+
+      createParticles(x, y, emoji) {
+        const count = 5;
+        for (let i = 0; i < count; i++) {
+          const particle = document.createElement('div');
+          particle.textContent = emoji;
+          particle.style.position = 'fixed';
+          particle.style.left = x + 'px';
+          particle.style.top = y + 'px';
+          particle.style.fontSize = '24px';
+          particle.style.pointerEvents = 'none';
+          particle.style.zIndex = '50';
+          particle.style.animation = 'starFall 1s ease-out forwards';
+          particle.style.animationDelay = (i * 0.1) + 's';
+          document.body.appendChild(particle);
+          
+          setTimeout(() => particle.remove(), 1100);
+        }
+      }
+
+      updateUI(text, result) {
+        document.getElementById('scoreDisplay').textContent = `🎵 ${this.score}てん`;
+        
+        const judgeText = document.getElementById('judgeText');
+        judgeText.textContent = text;
+        judgeText.className = `judge-text ${result}`;
+        if (text) {
+          judgeText.classList.add('show');
+          setTimeout(() => judgeText.classList.remove('show'), 500);
+        }
+      }
+
+      render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // ノーツ描画
+        this.activeNotes.forEach(note => {
+          if (note.judged) return;
+          
+          this.ctx.font = `${CONFIG.NOTE_SIZE}px Arial`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(note.type, note.x, note.y);
+        });
+      }
+
+      checkGameEnd(currentTime) {
+        const lastNote = this.notes[this.notes.length - 1];
+        return currentTime > lastNote.time + 2000 && this.activeNotes.length === 0;
+      }
+
+      endGame() {
+        this.isPlaying = false;
+        
+        // 結果表示
+        setTimeout(() => {
+          this.showResult();
+        }, 500);
+      }
+
+      showResult() {
+        const total = this.stats.perfect + this.stats.good + this.stats.miss;
+        const accuracy = total > 0 ? ((this.stats.perfect + this.stats.good) / total * 100).toFixed(0) : 0;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal result-modal';
+        modal.innerHTML = `
+          <h2>🎉 クリア！</h2>
+          <div class="stars">${this.getStars()}</div>
+          <div class="result-stats">
+            <div>
+              <span class="label">スコア:</span>
+              <span class="value">${this.score}てん</span>
+            </div>
+            <div>
+              <span class="label">パーフェクト:</span>
+              <span class="value">${this.stats.perfect}かい</span>
+            </div>
+            <div>
+              <span class="label">グッド:</span>
+              <span class="value">${this.stats.good}かい</span>
+            </div>
+            <div>
+              <span class="label">ミス:</span>
+              <span class="value">${this.stats.miss}かい</span>
+            </div>
+            <div>
+              <span class="label">せいかくさ:</span>
+              <span class="value">${accuracy}%</span>
+            </div>
+          </div>
+          <div class="modal-buttons">
+            <button class="btn btn-primary" id="retryBtn">もういちど</button>
+            <button class="btn btn-secondary" id="backToMenuBtn">きょくえらび</button>
+          </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        gameSound.playClear();
+        
+        // ボタンイベント
+        modal.querySelector('#retryBtn').addEventListener('click', () => {
+          gameSound.playTap();
+          overlay.remove();
+          this.startSong(SONGS.indexOf(this.currentSong));
+        });
+        
+        modal.querySelector('#backToMenuBtn').addEventListener('click', () => {
+          gameSound.playTap();
+          overlay.remove();
+          document.getElementById('songSelect').style.display = 'flex';
+        });
+      }
+
+      getStars() {
+        const accuracy = (this.stats.perfect + this.stats.good) / this.notes.length;
+        if (accuracy >= 0.9) return '⭐⭐⭐';
+        if (accuracy >= 0.7) return '⭐⭐';
+        return '⭐';
+      }
+    }
+
+    // ========== 初期化 ==========
+    const game = new RhythmGame();
+
+    // 曲選択
+    document.querySelectorAll('.song-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        gameSound.playTap();
+        const songIndex = parseInt(btn.dataset.song);
+        document.getElementById('songSelect').style.display = 'none';
+        game.startSong(songIndex);
+      });
+    });
+
+    // 戻るボタン
+    document.getElementById('backBtn').addEventListener('click', () => {
+      gameSound.playTap();
+      if (game.isPlaying) {
+        showConfirm('ゲームをやめますか？', () => {
+          game.isPlaying = false;
+          window.location.href = 'index.html';
+        });
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    // サウンドボタン
+    document.getElementById('soundBtn').addEventListener('click', () => {
+      const enabled = gameSound.toggle();
+      document.getElementById('soundBtn').textContent = enabled ? '🔊' : '🔇';
+    });
+
+    // 縦向き固定
+    lockPortrait();
+  </script>
+</body>
+</html>

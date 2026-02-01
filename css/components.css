@@ -1,0 +1,255 @@
+/* このみちゃんゲーム - 共通コンポーネント */
+
+/* ========== ボタン ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-md);
+  font-weight: bold;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: scale(0.95);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-pink), #FF85B3);
+  color: var(--text-white);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--primary-pink);
+  border: 2px solid var(--primary-pink);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--primary-green), #90E090);
+  color: var(--text-white);
+}
+
+/* ========== カード ========== */
+.card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:active {
+  transform: scale(0.98);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========== 固定ボタン ========== */
+.fixed-btn {
+  position: fixed;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-xl);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fixed-btn:active {
+  transform: scale(0.9);
+  box-shadow: var(--shadow-md);
+}
+
+.back-btn {
+  top: calc(var(--safe-top) + var(--spacing-md));
+  left: var(--spacing-md);
+  background: white;
+  color: var(--text-primary);
+}
+
+.sound-btn {
+  top: calc(var(--safe-top) + var(--spacing-md));
+  right: var(--spacing-md);
+  background: linear-gradient(135deg, var(--primary-pink), #FF85B3);
+  color: white;
+}
+
+.restart-btn {
+  top: calc(var(--safe-top) + var(--spacing-md));
+  right: calc(var(--spacing-md) * 2 + var(--touch-min));
+  background: linear-gradient(135deg, var(--primary-blue), #8AC8FF);
+  color: white;
+}
+
+/* ========== モーダル ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  animation: bounceIn 0.5s ease;
+  text-align: center;
+}
+
+.modal h2 {
+  font-size: var(--font-2xl);
+  color: var(--primary-pink);
+  margin-bottom: var(--spacing-lg);
+}
+
+.modal p {
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+/* ========== スコア表示 ========== */
+.score-display {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--spacing-md));
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-lg);
+  font-weight: bold;
+  color: var(--primary-pink);
+  z-index: 90;
+}
+
+/* ========== ゲームカード（ランチャー用） ========== */
+.game-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 120px;
+}
+
+.game-card:active {
+  transform: scale(0.96);
+  box-shadow: var(--shadow-md);
+}
+
+.game-icon {
+  font-size: 64px;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFE8F5 0%, #E8F4FF 100%);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  animation: float 3s ease-in-out infinite;
+}
+
+.game-info h2 {
+  color: var(--primary-pink);
+  font-size: var(--font-lg);
+  margin-bottom: var(--spacing-xs);
+}
+
+.game-info p {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+}
+
+/* ========== ローディング ========== */
+.loading {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 158, 200, 0.3);
+  border-top-color: var(--primary-pink);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== トースト通知 ========== */
+.toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + var(--spacing-xl));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius-full);
+  font-size: var(--font-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+  animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.7s;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}

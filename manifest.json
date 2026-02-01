@@ -1,21 +1,22 @@
 {
   "name": "このみちゃんのゲーム",
   "short_name": "このみゲーム",
-  "description": "このみちゃんのためのパズル＆えあわせゲーム",
-  "start_url": "/konomi-game-ace6463d/",
+  "description": "このみちゃんのための たのしいゲームあつめ",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffecd2",
-  "theme_color": "#e75480",
+  "background_color": "#FFE5F1",
+  "theme_color": "#FF9EC8",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./assets/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "./assets/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

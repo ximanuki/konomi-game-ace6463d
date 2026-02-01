@@ -5,476 +5,588 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#FF9EC8">
-    <link rel="stylesheet" href="common.css">
-    <title>🎴 このみちゃんの絵あわせゲーム</title>
+    <meta name="apple-mobile-web-app-title" content="えあわせゲーム">
+    <meta name="theme-color" content="#FFA8D8">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    <title>🎴 えあわせゲーム</title>
     <style>
         body {
-            background: linear-gradient(135deg, #E0F4FF 0%, #FFEEF8 100%);
+            background: linear-gradient(135deg, #FFE8F5 0%, #E8F4FF 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: var(--spacing-md);
-            padding-top: calc(var(--safe-top) + 70px);
-            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-lg));
+            overflow: hidden;
+            height: 100vh;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: var(--spacing-md);
-        }
-
-        h1 {
-            font-size: 26px;
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .message {
-            font-size: var(--font-md);
-            color: #666;
-            font-weight: bold;
-        }
-
-        .theme-select {
+        .game-container {
             display: flex;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-md);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .theme-btn {
-            padding: 12px 20px;
-            font-size: var(--font-sm);
-            font-weight: bold;
-            background: white;
-            border: 3px solid var(--primary-pink);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.3s;
-            min-height: 48px;
-        }
-
-        .theme-btn:active {
-            transform: scale(0.95);
-        }
-
-        .theme-btn.active {
-            background: var(--primary-pink);
-            color: white;
-            transform: scale(1.05);
-        }
-
-        .stats {
-            display: flex;
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-md);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .stat {
-            background: white;
-            padding: 10px 20px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            font-size: var(--font-md);
-            font-weight: bold;
-        }
-
-        .stat-value {
-            color: var(--primary-pink);
-            font-size: var(--font-lg);
-        }
-
-        .game-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding: var(--spacing-lg);
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            max-width: 340px;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            max-width: 375px;
             width: 100%;
         }
 
-        .card {
-            aspect-ratio: 1;
-            position: relative;
-            cursor: pointer;
-            transform-style: preserve-3d;
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border-radius: var(--radius-md);
+        /* テーマ選択画面 */
+        .theme-selection {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            animation: bounceIn 0.6s ease;
         }
 
-        .card.flipped {
+        .theme-selection h2 {
+            font-size: var(--font-xl);
+            color: var(--primary-pink);
+            text-align: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .theme-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .theme-card:active {
+            transform: scale(0.95);
+        }
+
+        .theme-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .theme-name {
+            font-size: var(--font-lg);
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        /* ゲーム画面 */
+        .game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            width: 100%;
+        }
+
+        .game-screen.active {
+            display: flex;
+            animation: bounceIn 0.6s ease;
+        }
+
+        /* スコアとメッセージ */
+        .game-header {
+            text-align: center;
+        }
+
+        .score-text {
+            font-size: var(--font-xl);
+            font-weight: bold;
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .message-text {
+            font-size: var(--font-md);
+            color: var(--text-secondary);
+            min-height: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* カードグリッド */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: var(--spacing-sm);
+            width: 100%;
+            max-width: 343px;
+            aspect-ratio: 4 / 3;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+
+        .card.flipped .card-inner {
             transform: rotateY(180deg);
         }
 
-        .card.matched {
-            animation: matchSuccess 0.6s ease;
-        }
-
-        @keyframes matchSuccess {
-            0%, 100% { transform: rotateY(180deg) scale(1); }
-            50% { transform: rotateY(180deg) scale(1.15); }
-        }
-
-        .card.wrong {
-            animation: wrongShake 0.5s ease;
-        }
-
-        @keyframes wrongShake {
-            0%, 100% { transform: rotateY(180deg) translateX(0); }
-            25% { transform: rotateY(180deg) translateX(-8px); }
-            75% { transform: rotateY(180deg) translateX(8px); }
+        .card.matched .card-inner {
+            animation: matchDisappear 0.6s ease forwards;
         }
 
         .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
-            backface-visibility: hidden;
             border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            backface-visibility: hidden;
             box-shadow: var(--shadow-md);
         }
 
-        .card-front {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, #9B7FE8 100%);
-            color: white;
-        }
-
-        .card-front::after {
-            content: '?';
-            font-size: 56px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
         .card-back {
+            background: linear-gradient(135deg, #FFA8D8 0%, #FF85B3 100%);
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .card-front {
             background: white;
             transform: rotateY(180deg);
-            border: 4px solid var(--primary-pink);
+            font-size: 64px;
         }
 
-        .card.matched .card-back {
-            border-color: var(--primary-green);
-            box-shadow: 0 0 20px var(--primary-green);
+        .card:active:not(.flipped):not(.matched) .card-inner {
+            transform: scale(0.95);
         }
 
-        @media (max-width: 375px) {
-            .game-board {
-                gap: 10px;
-                padding: var(--spacing-md);
-            }
-            .card-face {
-                font-size: 40px;
-            }
-            .card-front::after {
-                font-size: 48px;
-            }
+        /* リスタートボタン */
+        .restart-game-btn {
+            margin-top: var(--spacing-md);
+        }
+
+        /* クリアモーダル */
+        .clear-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .clear-modal.active {
+            display: flex;
+        }
+
+        .clear-content {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+            animation: bounceIn 0.5s ease;
+            text-align: center;
+        }
+
+        .clear-title {
+            font-size: var(--font-2xl);
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .clear-time {
+            font-size: var(--font-xl);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .stars {
+            font-size: 48px;
+            margin: var(--spacing-lg) 0;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .clear-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        /* 紙吹雪アニメーション */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 999;
         }
 
         @media (max-height: 667px) {
-            body {
-                padding-top: calc(var(--safe-top) + 60px);
+            .cards-grid {
+                max-width: 320px;
             }
-            h1 {
-                font-size: 24px;
+            .card-front {
+                font-size: 52px;
             }
-            .message {
-                font-size: var(--font-sm);
-            }
-            .stats {
-                gap: var(--spacing-sm);
-            }
-            .stat {
-                padding: 8px 16px;
-                font-size: var(--font-sm);
+            .card-back {
+                font-size: 40px;
             }
         }
     </style>
 </head>
 <body class="no-select">
-    <!-- ホームボタン -->
-    <a href="index.html" class="home-btn" aria-label="ホームに戻る">🏠</a>
-    
-    <!-- サウンドトグル -->
-    <button class="sound-toggle" id="soundBtn" aria-label="サウンド切り替え">🔊</button>
-    
-    <div class="header">
-        <h1>🎴 このみちゃんの<br>えあわせゲーム</h1>
-        <p class="message">おなじえを２まい<br>みつけてね！</p>
-    </div>
-    
-    <div class="theme-select">
-        <button class="theme-btn active" data-theme="animals">🐱 どうぶつ</button>
-        <button class="theme-btn" data-theme="sweets">🍰 おかし</button>
-        <button class="theme-btn" data-theme="sea">🐠 うみ</button>
-        <button class="theme-btn" data-theme="flowers">🌸 おはな</button>
-    </div>
-    
-    <div class="stats">
-        <div class="stat">
-            みつけた: <span class="stat-value" id="matches">0</span> / 6
+    <!-- 固定ボタン -->
+    <button class="fixed-btn back-btn" id="backBtn" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundBtn" aria-label="サウンド切り替え">🔊</button>
+
+    <div class="game-container">
+        <!-- テーマ選択画面 -->
+        <div class="theme-selection" id="themeSelection">
+            <h2>テーマをえらんでね</h2>
+            <div class="theme-grid">
+                <div class="theme-card" data-theme="animals">
+                    <div class="theme-icon">🐱</div>
+                    <div class="theme-name">どうぶつ</div>
+                </div>
+                <div class="theme-card" data-theme="sweets">
+                    <div class="theme-icon">🍰</div>
+                    <div class="theme-name">おかし</div>
+                </div>
+                <div class="theme-card" data-theme="ocean">
+                    <div class="theme-icon">🐠</div>
+                    <div class="theme-name">うみ</div>
+                </div>
+                <div class="theme-card" data-theme="flowers">
+                    <div class="theme-icon">🌸</div>
+                    <div class="theme-name">おはな</div>
+                </div>
+            </div>
         </div>
-        <div class="stat">
-            めくった: <span class="stat-value" id="moves">0</span>
-        </div>
-    </div>
-    
-    <div class="game-board" id="game-board"></div>
-    
-    <!-- お祝いモーダル -->
-    <div class="celebration-overlay" id="celebration">
-        <div class="celebration-content">
-            <div class="celebration-emoji">🎉</div>
-            <h2 class="celebration-title">すごーい！！</h2>
-            <p class="celebration-message">
-                このみちゃん、<br>
-                ぜんぶみつけたよ！✨
-            </p>
-            <div id="result" class="celebration-message"></div>
-            <div class="celebration-emoji">🌟👑🌟</div>
-            <button class="big-button btn-pink" onclick="startGame()">
-                もういっかいあそぶ
+
+        <!-- ゲーム画面 -->
+        <div class="game-screen" id="gameScreen">
+            <div class="game-header">
+                <div class="score-text" id="scoreText">🎯 0/6</div>
+                <div class="message-text" id="messageText">がんばって！</div>
+            </div>
+
+            <div class="cards-grid" id="cardsGrid">
+                <!-- カードはJSで生成 -->
+            </div>
+
+            <button class="btn btn-secondary restart-game-btn" id="restartGameBtn">
+                🔄 もういちど
             </button>
         </div>
     </div>
-    
-    <script src="sound.js"></script>
+
+    <!-- クリアモーダル -->
+    <div class="clear-modal" id="clearModal">
+        <div class="clear-content">
+            <div class="clear-title">🎉 やったね！🎉</div>
+            <div class="clear-time" id="clearTime">クリアタイム<br>00:00</div>
+            <div class="stars">⭐⭐⭐</div>
+            <div class="clear-buttons">
+                <button class="btn btn-primary" id="playAgainBtn">もういちど</button>
+                <button class="btn btn-secondary" id="backToThemeBtn">テーマをかえる</button>
+                <button class="btn btn-secondary" id="backToMenuBtn">メニューにもどる</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/sound.js"></script>
+    <script src="./js/particle.js"></script>
     <script>
-        // テーマ設定（3x4=12枚用に6種類）
-        const themes = {
-            animals: ['🐱', '🐶', '🐰', '🐼', '🦊', '🐨'],
-            sweets: ['🍰', '🧁', '🍩', '🍪', '🍭', '🎂'],
-            sea: ['🐠', '🐙', '🦀', '🐳', '🦈', '🐬'],
-            flowers: ['🌸', '🌺', '🌻', '🌷', '🌹', '🌼']
+        // テーマ定義
+        const THEMES = {
+            animals: ['🐱', '🐶', '🐰', '🐼', '🐸', '🐷'],
+            sweets: ['🍰', '🍩', '🍪', '🍫', '🍭', '🍦'],
+            ocean: ['🐠', '🐙', '🐚', '🦀', '🐟', '🦈'],
+            flowers: ['🌸', '🌻', '🌷', '🌹', '🌺', '🏵️']
         };
-        
-        let currentTheme = 'animals';
+
+        // ゲーム状態
+        let currentTheme = null;
         let cards = [];
         let flippedCards = [];
         let matchedPairs = 0;
-        let moves = 0;
-        let canFlip = true;
-        
-        // サウンドトグル
+        let totalPairs = 6;
+        let startTime = null;
+        let isProcessing = false;
+
+        // DOM要素
+        const themeSelection = document.getElementById('themeSelection');
+        const gameScreen = document.getElementById('gameScreen');
+        const cardsGrid = document.getElementById('cardsGrid');
+        const scoreText = document.getElementById('scoreText');
+        const messageText = document.getElementById('messageText');
+        const clearModal = document.getElementById('clearModal');
+        const clearTime = document.getElementById('clearTime');
+        const backBtn = document.getElementById('backBtn');
         const soundBtn = document.getElementById('soundBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const backToThemeBtn = document.getElementById('backToThemeBtn');
+        const backToMenuBtn = document.getElementById('backToMenuBtn');
+
+        // サウンド初期化
+        const soundEnabled = loadData('soundEnabled', true);
+        gameSound.enabled = soundEnabled;
+        soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+
         soundBtn.addEventListener('click', () => {
             const enabled = gameSound.toggle();
             soundBtn.textContent = enabled ? '🔊' : '🔇';
+            saveData('soundEnabled', enabled);
             if (enabled) {
                 gameSound.playTap();
             }
         });
 
-        // BGM開始（最初のクリックで）
-        let bgmStarted = false;
-        document.addEventListener('click', () => {
-            if (!bgmStarted) {
-                gameSound.startBGM();
-                bgmStarted = true;
-            }
-        }, { once: true });
+        // テーマ選択
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.addEventListener('click', () => {
+                gameSound.playTap();
+                const theme = card.dataset.theme;
+                startGame(theme);
+            });
+        });
 
-        // シャッフル関数
-        function shuffle(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
+        // 戻るボタン
+        backBtn.addEventListener('click', () => {
+            gameSound.playTap();
+            if (gameScreen.classList.contains('active')) {
+                // ゲーム中→テーマ選択に戻る
+                showConfirm('テーマせんたくにもどりますか？', () => {
+                    backToThemeSelection();
+                });
+            } else {
+                // テーマ選択中→メニューに戻る
+                window.location.href = './index.html';
             }
-            return arr;
+        });
+
+        // リスタートボタン
+        restartGameBtn.addEventListener('click', () => {
+            gameSound.playTap();
+            showConfirm('もういちどあそびますか？', () => {
+                restartGame();
+            });
+        });
+
+        // クリアモーダルボタン
+        playAgainBtn.addEventListener('click', () => {
+            gameSound.playTap();
+            clearModal.classList.remove('active');
+            restartGame();
+        });
+
+        backToThemeBtn.addEventListener('click', () => {
+            gameSound.playTap();
+            clearModal.classList.remove('active');
+            backToThemeSelection();
+        });
+
+        backToMenuBtn.addEventListener('click', () => {
+            gameSound.playTap();
+            window.location.href = './index.html';
+        });
+
+        // ゲーム開始
+        function startGame(theme) {
+            currentTheme = theme;
+            themeSelection.style.display = 'none';
+            gameScreen.classList.add('active');
+            initGame();
         }
-        
-        // カード作成
-        function createCard(emoji, index) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.dataset.emoji = emoji;
-            card.dataset.index = index;
+
+        // ゲーム初期化
+        function initGame() {
+            matchedPairs = 0;
+            flippedCards = [];
+            isProcessing = false;
+            startTime = Date.now();
             
-            card.innerHTML = `
-                <div class="card-face card-front"></div>
-                <div class="card-face card-back">${emoji}</div>
-            `;
-            
-            card.addEventListener('click', () => flipCard(card));
-            return card;
+            // カード生成
+            const emojis = THEMES[currentTheme];
+            const cardPairs = emojis.map(emoji => [emoji, emoji]).flat();
+            cards = shuffle(cardPairs);
+
+            // グリッド生成
+            cardsGrid.innerHTML = '';
+            cards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.emoji = emoji;
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face card-back">?</div>
+                        <div class="card-face card-front">${emoji}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => handleCardClick(card));
+                cardsGrid.appendChild(card);
+            });
+
+            updateUI();
         }
-        
-        // カードをめくる
-        function flipCard(card) {
-            if (!canFlip) return;
+
+        // カードクリック処理
+        function handleCardClick(card) {
+            if (isProcessing) return;
             if (card.classList.contains('flipped')) return;
+            if (card.classList.contains('matched')) return;
             if (flippedCards.length >= 2) return;
-            
-            gameSound.playFlip();
+
+            // カードをめくる
             card.classList.add('flipped');
+            gameSound.playFlip();
             flippedCards.push(card);
-            
+
             if (flippedCards.length === 2) {
-                moves++;
-                document.getElementById('moves').textContent = moves;
                 checkMatch();
             }
         }
-        
-        // マッチチェック
+
+        // マッチング判定
         function checkMatch() {
-            canFlip = false;
+            isProcessing = true;
             const [card1, card2] = flippedCards;
-            
-            if (card1.dataset.emoji === card2.dataset.emoji) {
-                // マッチ成功！
+            const emoji1 = card1.dataset.emoji;
+            const emoji2 = card2.dataset.emoji;
+
+            if (emoji1 === emoji2) {
+                // 正解
                 setTimeout(() => {
-                    gameSound.playCorrect();
-                    matchedPairs++;
-                    document.getElementById('matches').textContent = matchedPairs;
-                    
                     card1.classList.add('matched');
                     card2.classList.add('matched');
-                    
-                    // フローティング絵文字
-                    showFloating(card1, '⭐');
-                    showFloating(card2, '✨');
-                    
+                    gameSound.playCorrect();
+                    matchedPairs++;
+                    updateUI();
                     flippedCards = [];
-                    canFlip = true;
-                    
-                    // 全部見つけた！
-                    if (matchedPairs === 6) {
-                        setTimeout(celebrate, 800);
+                    isProcessing = false;
+
+                    if (matchedPairs === totalPairs) {
+                        setTimeout(() => {
+                            showClearModal();
+                        }, 500);
                     }
-                }, 400);
+                }, 300);
             } else {
                 // 不正解
                 setTimeout(() => {
-                    gameSound.playWrong();
-                    card1.classList.add('wrong');
-                    card2.classList.add('wrong');
-                    
-                    setTimeout(() => {
-                        card1.classList.remove('flipped', 'wrong');
-                        card2.classList.remove('flipped', 'wrong');
-                        flippedCards = [];
-                        canFlip = true;
-                    }, 700);
-                }, 600);
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    isProcessing = false;
+                }, 1000);
             }
         }
-        
-        // フローティング絵文字表示
-        function showFloating(card, emoji) {
-            const rect = card.getBoundingClientRect();
-            const el = document.createElement('div');
-            el.className = 'floating-emoji';
-            el.textContent = emoji;
-            el.style.left = rect.left + rect.width / 2 - 20 + 'px';
-            el.style.top = rect.top + 'px';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1500);
-        }
-        
-        // お祝い
-        function celebrate() {
-            gameSound.stopBGM();
-            gameSound.playWin();
-            
-            // 評価メッセージ
-            let stars = '';
-            if (moves <= 8) stars = '⭐⭐⭐ さいこう！';
-            else if (moves <= 12) stars = '⭐⭐ すごい！';
-            else stars = '⭐ よくできた！';
-            
-            document.getElementById('result').innerHTML = 
-                `${moves}かいで みつけたよ！<br><span style="font-size:28px">${stars}</span>`;
-            
-            const celebration = document.getElementById('celebration');
-            celebration.classList.add('show');
-            
-            createConfetti();
-        }
-        
-        // 紙吹雪
-        function createConfetti() {
-            const emojis = ['🎉', '⭐', '✨', '🌟', '💖', '🎊', '👏', '🎈'];
-            
-            for (let i = 0; i < 60; i++) {
-                setTimeout(() => {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-                    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                    confetti.style.left = Math.random() * 100 + 'vw';
-                    confetti.style.top = '-30px';
-                    confetti.style.animationDuration = (2 + Math.random()) + 's';
-                    document.body.appendChild(confetti);
-                    setTimeout(() => confetti.remove(), 3500);
-                }, i * 40);
-            }
-        }
-        
-        // ゲーム開始
-        function startGame() {
-            const celebration = document.getElementById('celebration');
-            celebration.classList.remove('show');
-            
-            matchedPairs = 0;
-            moves = 0;
-            flippedCards = [];
-            canFlip = true;
-            
-            document.getElementById('matches').textContent = '0';
-            document.getElementById('moves').textContent = '0';
-            
-            // カードペア作成（6種類×2=12枚）
-            const emojis = themes[currentTheme];
-            const cardPairs = [...emojis, ...emojis];
-            cards = shuffle(cardPairs);
-            
-            // ボード構築
-            const board = document.getElementById('game-board');
-            board.innerHTML = '';
-            
-            cards.forEach((emoji, index) => {
-                board.appendChild(createCard(emoji, index));
-            });
 
-            // BGM再開
-            if (bgmStarted) {
-                gameSound.startBGM();
+        // UI更新
+        function updateUI() {
+            scoreText.textContent = `🎯 ${matchedPairs}/${totalPairs}`;
+            
+            const remaining = totalPairs - matchedPairs;
+            if (remaining === 0) {
+                messageText.textContent = 'かんぺき！';
+            } else if (remaining === 1) {
+                messageText.textContent = 'あと １こ！';
+            } else if (remaining === 2) {
+                messageText.textContent = 'あと ２こ！';
+            } else if (remaining <= 3) {
+                messageText.textContent = 'もうちょっと！';
+            } else {
+                messageText.textContent = 'がんばって！';
             }
         }
-        
-        // テーマ変更
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                gameSound.playTap();
-                
-                document.querySelectorAll('.theme-btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                btn.classList.add('active');
-                
-                currentTheme = btn.dataset.theme;
-                startGame();
+
+        // クリアモーダル表示
+        function showClearModal() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            clearTime.innerHTML = `クリアタイム<br>${formatTime(elapsed)}`;
+            clearModal.classList.add('active');
+            gameSound.playClear();
+            
+            // 紙吹雪
+            for (let i = 0; i < 30; i++) {
+                createConfetti();
+            }
+
+            // データ保存
+            saveGameResult(elapsed);
+        }
+
+        // 紙吹雪生成
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.top = '-10px';
+            confetti.style.background = ['#FF9EC8', '#A8D8FF', '#FFF4A8', '#B8F0B8'][Math.floor(Math.random() * 4)];
+            confetti.style.animation = `confetti ${2 + Math.random() * 2}s ease-out forwards`;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4000);
+        }
+
+        // ゲーム結果保存
+        function saveGameResult(time) {
+            const results = loadData('matchingResults', []);
+            results.push({
+                theme: currentTheme,
+                time: time,
+                date: new Date().toISOString()
             });
-        });
-        
-        // ホームボタン
-        document.querySelector('.home-btn').addEventListener('click', (e) => {
-            gameSound.playTap();
-            gameSound.stopBGM();
-        });
-        
+            saveData('matchingResults', results);
+
+            // 実績チェック（将来実装）
+            console.log(`[Matching] Cleared ${currentTheme} in ${time}s`);
+        }
+
+        // ゲーム再開
+        function restartGame() {
+            initGame();
+        }
+
+        // テーマ選択に戻る
+        function backToThemeSelection() {
+            gameScreen.classList.remove('active');
+            themeSelection.style.display = 'flex';
+            currentTheme = null;
+        }
+
+        // 画面向き固定
+        lockPortrait();
+
         // 初期化
-        startGame();
+        gameSound.init();
     </script>
 </body>
 </html>
