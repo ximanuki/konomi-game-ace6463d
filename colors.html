@@ -1,68 +1,495 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>いろあわせ - このみちゃんのゲーム</title>
-  <link rel="stylesheet" href="./css/common.css">
-  <link rel="stylesheet" href="./css/components.css">
-  <link rel="stylesheet" href="./css/animations.css">
-  <style>
-    .game-container {
-      background: var(--bg-gradient-3);
-    }
-    .coming-soon {
-      text-align: center;
-      padding: var(--spacing-xl);
-      margin-top: 100px;
-    }
-    .coming-soon-icon {
-      font-size: 120px;
-      margin-bottom: var(--spacing-lg);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    .coming-soon-title {
-      font-size: var(--font-2xl);
-      font-weight: bold;
-      color: var(--primary-pink);
-      margin-bottom: var(--spacing-md);
-    }
-    .coming-soon-text {
-      font-size: var(--font-lg);
-      color: var(--text-secondary);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#FFF4A8">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <title>🌈 このみちゃんのいろあわせゲーム</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #FFFACD 0%, #FFE8F5 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: calc(var(--safe-top) + 70px) var(--spacing-md) calc(var(--safe-bottom) + var(--spacing-md));
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .score {
+            background: white;
+            padding: 12px 24px;
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-md);
+            font-size: var(--font-xl);
+            font-weight: bold;
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .question {
+            font-size: var(--font-2xl);
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+            padding: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+            max-width: 340px;
+            width: 100%;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .color-card {
+            aspect-ratio: 1;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            border: 4px solid white;
+            min-height: 150px;
+        }
+
+        .color-card:active {
+            transform: scale(0.95);
+        }
+
+        .color-card.correct {
+            animation: bounce 0.6s ease-out;
+            border-color: #FFD700;
+        }
+
+        .color-card.wrong {
+            animation: shake 0.5s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1) translateY(-10px); }
+            50% { transform: scale(1.05) translateY(-5px); }
+            75% { transform: scale(1.08) translateY(-7px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        .message {
+            font-size: var(--font-lg);
+            font-weight: bold;
+            color: var(--primary-pink);
+            text-align: center;
+            min-height: 30px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .difficulty-btn {
+            padding: 12px 20px;
+            font-size: var(--font-md);
+            font-weight: bold;
+            background: white;
+            border: 3px solid var(--primary-yellow);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 48px;
+            color: var(--text-primary);
+        }
+
+        .difficulty-btn:active {
+            transform: scale(0.95);
+        }
+
+        .difficulty-btn.active {
+            background: var(--primary-yellow);
+            color: var(--text-primary);
+            border-color: #FFD700;
+            transform: scale(1.05);
+        }
+
+        .modal-subtitle {
+            font-size: var(--font-xl);
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .stars {
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: center;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .star {
+            font-size: 48px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .star:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .star:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* パーティクル（キラキラ） */
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 24px;
+            animation: sparkle-fall 1s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes sparkle-fall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-30px) scale(1.5) rotate(180deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) scale(0.5) rotate(360deg);
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="game-container">
-    <button class="back-btn" onclick="location.href='./index.html'">←</button>
-    <button class="sound-toggle" id="soundToggle">🔊</button>
-    
-    <div class="coming-soon">
-      <div class="coming-soon-icon">🌈</div>
-      <h1 class="coming-soon-title">いろあわせ</h1>
-      <p class="coming-soon-text">
-        じゅんび ちゅうだよ！<br>
-        もう すこし まっててね 💕
-      </p>
+    <!-- 固定ボタン -->
+    <button class="fixed-btn back-btn" onclick="location.href='index.html'" aria-label="もどる">←</button>
+    <button class="fixed-btn sound-btn" id="soundToggle" aria-label="サウンド切り替え">🔊</button>
+
+    <!-- メインコンテンツ -->
+    <div class="header">
+        <div class="score" id="scoreDisplay">0 / 10</div>
+        <div class="difficulty-selector" id="difficultySelector">
+            <button class="difficulty-btn active" data-level="easy">かんたん</button>
+            <button class="difficulty-btn" data-level="normal">ふつう</button>
+            <button class="difficulty-btn" data-level="hard">むずかしい</button>
+        </div>
     </div>
-  </div>
-  
-  <script src="./js/sound.js"></script>
-  <script src="./js/utils.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof SoundManager !== 'undefined') {
-        window.soundManager = new SoundManager();
+
+    <div class="question" id="question">どれが「あか」？</div>
+
+    <div class="color-grid" id="colorGrid">
+        <!-- JavaScriptで生成 -->
+    </div>
+
+    <div class="message" id="message">がんばって！</div>
+
+    <!-- クリアモーダル -->
+    <div class="modal-overlay hidden" id="clearModal">
+        <div class="modal">
+            <h2>🌈 やったね！</h2>
+            <p class="modal-subtitle">いろマスター！</p>
+            <div class="stars">
+                <span class="star">⭐</span>
+                <span class="star">⭐</span>
+                <span class="star">⭐</span>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="restartGame()">もういちど</button>
+                <button class="btn btn-secondary" onclick="location.href='index.html'">もどる</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/sound.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/particle.js"></script>
+    <script>
+        // ========== ゲーム定数 ==========
+        const COLORS = {
+            easy: [
+                { name: 'あか', color: '#FF4444', index: 0 },
+                { name: 'あお', color: '#4488FF', index: 1 },
+                { name: 'きいろ', color: '#FFDD44', index: 2 },
+                { name: 'みどり', color: '#44DD44', index: 3 }
+            ],
+            normal: [
+                { name: 'あか', color: '#FF4444', index: 0 },
+                { name: 'あお', color: '#4488FF', index: 1 },
+                { name: 'きいろ', color: '#FFDD44', index: 2 },
+                { name: 'みどり', color: '#44DD44', index: 3 },
+                { name: 'ピンク', color: '#FF99CC', index: 4 },
+                { name: 'オレンジ', color: '#FF9944', index: 5 }
+            ],
+            hard: [
+                { name: 'あか', color: '#FF4444', index: 0 },
+                { name: 'あお', color: '#4488FF', index: 1 },
+                { name: 'きいろ', color: '#FFDD44', index: 2 },
+                { name: 'みどり', color: '#44DD44', index: 3 },
+                { name: 'ピンク', color: '#FF99CC', index: 4 },
+                { name: 'オレンジ', color: '#FF9944', index: 5 },
+                { name: 'むらさき', color: '#9944FF', index: 6 },
+                { name: 'ちゃいろ', color: '#996633', index: 7 }
+            ]
+        };
+
+        const TOTAL_QUESTIONS = 10;
+
+        // ========== ゲーム状態 ==========
+        let currentDifficulty = 'easy';
+        let currentQuestion = 0;
+        let score = 0;
+        let targetColor = null;
+        let isAnswering = false;
+
+        // ========== DOM要素 ==========
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const questionEl = document.getElementById('question');
+        const colorGrid = document.getElementById('colorGrid');
+        const messageEl = document.getElementById('message');
+        const clearModal = document.getElementById('clearModal');
         const soundToggle = document.getElementById('soundToggle');
-        soundToggle.textContent = window.soundManager.enabled ? '🔊' : '🔇';
-        soundToggle.addEventListener('click', () => {
-          window.soundManager.toggle();
-          soundToggle.textContent = window.soundManager.enabled ? '🔊' : '🔇';
-        });
-      }
-    });
-  </script>
+        const difficultySelector = document.getElementById('difficultySelector');
+
+        // ========== 初期化 ==========
+        function init() {
+            // 音量ボタン
+            soundToggle.addEventListener('click', () => {
+                const enabled = gameSound.toggle();
+                soundToggle.textContent = enabled ? '🔊' : '🔇';
+                gameSound.playTap();
+            });
+
+            // 難易度選択
+            difficultySelector.addEventListener('click', (e) => {
+                if (e.target.classList.contains('difficulty-btn')) {
+                    gameSound.playTap();
+                    
+                    // アクティブ切り替え
+                    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    
+                    // 難易度変更してリスタート
+                    currentDifficulty = e.target.dataset.level;
+                    restartGame();
+                }
+            });
+
+            // ゲーム開始
+            startNewGame();
+        }
+
+        // ========== ゲーム開始 ==========
+        function startNewGame() {
+            currentQuestion = 0;
+            score = 0;
+            updateScore();
+            nextQuestion();
+        }
+
+        // ========== 次の問題 ==========
+        function nextQuestion() {
+            if (currentQuestion >= TOTAL_QUESTIONS) {
+                // クリア
+                showClearModal();
+                return;
+            }
+
+            isAnswering = false;
+            currentQuestion++;
+            updateScore();
+
+            // ランダムに色を選択
+            const colorSet = COLORS[currentDifficulty];
+            targetColor = colorSet[Math.floor(Math.random() * colorSet.length)];
+
+            // 問題文更新
+            questionEl.textContent = `どれが「${targetColor.name}」？`;
+
+            // カードを4枚ランダム表示（ターゲット色を含む）
+            const choices = [targetColor];
+            const otherColors = colorSet.filter(c => c.name !== targetColor.name);
+            
+            // 残りをランダムに追加（重複なし）
+            while (choices.length < 4 && choices.length < colorSet.length) {
+                const randomColor = otherColors[Math.floor(Math.random() * otherColors.length)];
+                if (!choices.find(c => c.name === randomColor.name)) {
+                    choices.push(randomColor);
+                }
+            }
+
+            // 4枚未満の場合は繰り返し
+            while (choices.length < 4) {
+                const randomColor = colorSet[Math.floor(Math.random() * colorSet.length)];
+                choices.push(randomColor);
+            }
+
+            // シャッフル
+            const shuffled = shuffle(choices);
+
+            // カード生成
+            renderCards(shuffled);
+
+            // メッセージ更新
+            updateMessage();
+        }
+
+        // ========== カード描画 ==========
+        function renderCards(colors) {
+            colorGrid.innerHTML = '';
+            
+            colors.forEach((color, index) => {
+                const card = document.createElement('div');
+                card.className = 'color-card';
+                card.style.backgroundColor = color.color;
+                card.dataset.colorName = color.name;
+                card.dataset.colorIndex = color.index;
+                
+                card.addEventListener('click', () => handleCardClick(card, color));
+                
+                colorGrid.appendChild(card);
+            });
+        }
+
+        // ========== カードクリック処理 ==========
+        function handleCardClick(card, color) {
+            if (isAnswering) return;
+            isAnswering = true;
+
+            // 音を鳴らす
+            gameSound.playColorNote(color.index);
+
+            if (color.name === targetColor.name) {
+                // 正解
+                card.classList.add('correct');
+                gameSound.playCorrect();
+                score++;
+                updateScore();
+                
+                // キラキラ演出
+                createSparkles(card);
+                
+                messageEl.textContent = 'せいかい！';
+                messageEl.style.color = '#44DD44';
+
+                // 次の問題へ
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1200);
+            } else {
+                // 不正解
+                card.classList.add('wrong');
+                vibrate('medium');
+                
+                messageEl.textContent = 'もういちど！';
+                messageEl.style.color = '#FF4444';
+
+                // 再挑戦可能
+                setTimeout(() => {
+                    card.classList.remove('wrong');
+                    isAnswering = false;
+                    messageEl.textContent = 'がんばって！';
+                    messageEl.style.color = 'var(--primary-pink)';
+                }, 600);
+            }
+        }
+
+        // ========== スコア更新 ==========
+        function updateScore() {
+            scoreDisplay.textContent = `${score} / ${TOTAL_QUESTIONS}`;
+        }
+
+        // ========== メッセージ更新 ==========
+        function updateMessage() {
+            const remaining = TOTAL_QUESTIONS - currentQuestion;
+            if (remaining > 5) {
+                messageEl.textContent = 'がんばって！';
+            } else if (remaining > 2) {
+                messageEl.textContent = `あと ${remaining} もん！`;
+            } else if (remaining > 0) {
+                messageEl.textContent = 'もうすこし！';
+            }
+            messageEl.style.color = 'var(--primary-pink)';
+        }
+
+        // ========== キラキラ演出 ==========
+        function createSparkles(element) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.textContent = '✨';
+                
+                const angle = (Math.PI * 2 * i) / 8;
+                const distance = 30;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                sparkle.style.left = `${x}px`;
+                sparkle.style.top = `${y}px`;
+                
+                document.body.appendChild(sparkle);
+                
+                setTimeout(() => sparkle.remove(), 1000);
+            }
+        }
+
+        // ========== クリアモーダル表示 ==========
+        function showClearModal() {
+            gameSound.playClear();
+            clearModal.classList.remove('hidden');
+            
+            // 紙吹雪
+            if (typeof createConfetti === 'function') {
+                createConfetti();
+            }
+        }
+
+        // ========== リスタート ==========
+        function restartGame() {
+            gameSound.playTap();
+            clearModal.classList.add('hidden');
+            startNewGame();
+        }
+
+        // ========== 起動 ==========
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
