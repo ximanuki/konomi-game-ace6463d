@@ -2,114 +2,185 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="このみゲーム">
-    <meta name="theme-color" content="#e75480">
+    <meta name="theme-color" content="#FF9EC8">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="common.css">
     <title>🎮 このみちゃんのゲーム</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
+            background: linear-gradient(135deg, #FFE5F1 0%, #D4E4FF 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: var(--spacing-lg);
+            padding-top: calc(var(--safe-top) + 80px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-lg));
         }
-        html {
-            height: -webkit-fill-available;
-        }
-        h1 {
-            color: #e75480;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
-            font-size: 1.8em;
+
+        .header {
             text-align: center;
+            margin-bottom: var(--spacing-xl);
+            animation: bounceIn 0.6s ease;
         }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: var(--spacing-sm);
+        }
+
         .subtitle {
+            font-size: var(--font-lg);
             color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1em;
+            font-weight: bold;
         }
+
         .game-list {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: var(--spacing-lg);
             width: 100%;
-            max-width: 350px;
+            max-width: 400px;
+            animation: bounceIn 0.8s ease 0.2s backwards;
         }
+
         .game-card {
             background: white;
-            border-radius: 25px;
-            padding: 25px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
             text-decoration: none;
             color: inherit;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: var(--spacing-lg);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-height: 120px;
         }
-        .game-card:hover, .game-card:active {
-            transform: scale(1.03);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+
+        .game-card:active {
+            transform: scale(0.96);
+            box-shadow: var(--shadow-md);
         }
+
         .game-icon {
-            font-size: 3.5em;
-            width: 80px;
-            height: 80px;
+            font-size: 64px;
+            width: 100px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #fed6e3 0%, #a8edea 100%);
-            border-radius: 20px;
+            background: linear-gradient(135deg, #FFE8F5 0%, #E8F4FF 100%);
+            border-radius: var(--radius-md);
             flex-shrink: 0;
+            animation: float 3s ease-in-out infinite;
         }
+
+        .game-card:nth-child(2) .game-icon {
+            background: linear-gradient(135deg, #FFF4E8 0%, #FFE8F5 100%);
+            animation-delay: 0.5s;
+        }
+
+        .game-info {
+            flex: 1;
+        }
+
         .game-info h2 {
-            color: #e75480;
-            font-size: 1.3em;
-            margin-bottom: 5px;
+            color: var(--primary-pink);
+            font-size: var(--font-lg);
+            margin-bottom: var(--spacing-xs);
         }
+
         .game-info p {
             color: #888;
-            font-size: 0.95em;
+            font-size: var(--font-sm);
+            line-height: 1.5;
         }
+
         .footer {
-            margin-top: 40px;
+            margin-top: var(--spacing-xl);
             color: #999;
-            font-size: 0.85em;
+            font-size: var(--font-xs);
+            text-align: center;
+            animation: bounceIn 1s ease 0.4s backwards;
         }
-        .footer span {
-            color: #e75480;
+
+        .footer .heart {
+            color: var(--primary-pink);
+            display: inline-block;
+            animation: pulse 1.5s ease-in-out infinite;
         }
-        @media (max-width: 400px) {
-            h1 { font-size: 1.5em; }
-            .game-card { padding: 20px; }
-            .game-icon { font-size: 2.5em; width: 60px; height: 60px; }
+
+        /* サウンドトグル */
+        .sound-toggle {
+            background: linear-gradient(135deg, var(--primary-pink), #FF85B3);
+            color: white;
+        }
+
+        /* キラキラ装飾 */
+        .sparkles {
+            position: fixed;
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .sparkle-1 { top: 15%; left: 10%; animation: sparkle 2s ease-in-out infinite; }
+        .sparkle-2 { top: 25%; right: 15%; animation: sparkle 2.5s ease-in-out infinite 0.5s; }
+        .sparkle-3 { bottom: 20%; left: 15%; animation: sparkle 3s ease-in-out infinite 1s; }
+        .sparkle-4 { bottom: 30%; right: 10%; animation: sparkle 2.2s ease-in-out infinite 1.5s; }
+        .sparkle-5 { top: 45%; left: 5%; animation: sparkle 2.8s ease-in-out infinite 0.8s; }
+        .sparkle-6 { top: 55%; right: 8%; animation: sparkle 2.3s ease-in-out infinite 1.2s; }
+
+        @media (max-height: 667px) {
+            body {
+                padding-top: calc(var(--safe-top) + 60px);
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+            .game-card {
+                min-height: 100px;
+                padding: var(--spacing-md);
+            }
+            .game-icon {
+                font-size: 52px;
+                width: 80px;
+                height: 80px;
+            }
         }
     </style>
 </head>
-<body>
-    <h1>🎮 このみちゃんのゲーム</h1>
-    <p class="subtitle">あそびたいゲームをえらんでね！</p>
+<body class="no-select">
+    <!-- キラキラ装飾 -->
+    <div class="sparkles sparkle-1">⭐</div>
+    <div class="sparkles sparkle-2">✨</div>
+    <div class="sparkles sparkle-3">🌟</div>
+    <div class="sparkles sparkle-4">⭐</div>
+    <div class="sparkles sparkle-5">✨</div>
+    <div class="sparkles sparkle-6">💫</div>
+
+    <!-- サウンドトグル -->
+    <button class="sound-toggle" id="soundBtn" aria-label="サウンド切り替え">
+        🔊
+    </button>
+    
+    <div class="header">
+        <h1>🎮 このみちゃんの<br>ゲーム</h1>
+        <p class="subtitle">あそびたいゲームを<br>えらんでね！</p>
+    </div>
     
     <div class="game-list">
         <a href="puzzle.html" class="game-card">
             <div class="game-icon">🧩</div>
             <div class="game-info">
                 <h2>ジグソーパズル</h2>
-                <p>えをバラバラにして、もとにもどそう！</p>
+                <p>えをバラバラにして、<br>もとにもどそう！</p>
             </div>
         </a>
         
@@ -117,19 +188,51 @@
             <div class="game-icon">🎴</div>
             <div class="game-info">
                 <h2>えあわせゲーム</h2>
-                <p>おなじえを2まいみつけよう！</p>
+                <p>おなじえを２まい<br>みつけよう！</p>
             </div>
         </a>
     </div>
     
-    <p class="footer">Made with <span>♥</span> by モルト 🍺</p>
+    <p class="footer">
+        Made with <span class="heart">♥</span> by モルト 🍺
+    </p>
     
+    <script src="sound.js"></script>
     <script>
-        // Register service worker
+        // サウンドトグル
+        const soundBtn = document.getElementById('soundBtn');
+        soundBtn.addEventListener('click', () => {
+            const enabled = gameSound.toggle();
+            soundBtn.textContent = enabled ? '🔊' : '🔇';
+            if (enabled) {
+                gameSound.playTap();
+            }
+        });
+
+        // ゲームカードタップ音
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                gameSound.playTap();
+                // ちょっとした遅延で気持ちいい感じに
+                e.preventDefault();
+                setTimeout(() => {
+                    window.location.href = card.href;
+                }, 150);
+            });
+        });
+
+        // Service Worker登録
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('SW registered'))
-                .catch(err => console.log('SW failed', err));
+                .then(reg => console.log('✅ SW registered'))
+                .catch(err => console.log('❌ SW failed', err));
+        }
+
+        // 画面向き固定（縦のみ）
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(err => {
+                console.log('Orientation lock not supported');
+            });
         }
     </script>
 </body>
