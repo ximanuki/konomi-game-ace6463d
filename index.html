@@ -307,9 +307,7 @@
       console.log('🎮 このみちゃんのゲーム - ランチャー起動');
       
       // サウンド初期化
-      if (typeof SoundManager !== 'undefined') {
-        window.soundManager = new SoundManager();
-        
+      if (typeof gameSound !== 'undefined') {
         // 音量ボタン設定
         const soundToggle = document.getElementById('soundToggle');
         if (soundToggle) {
@@ -317,10 +315,10 @@
           updateSoundButton();
           
           soundToggle.addEventListener('click', () => {
-            window.soundManager.toggle();
+            gameSound.toggle();
             updateSoundButton();
             // タップ音を鳴らす
-            window.soundManager.play('tap');
+            gameSound.playTap();
           });
         }
       }
@@ -347,8 +345,8 @@
       gameCards.forEach(card => {
         card.addEventListener('click', (e) => {
           // タップ音
-          if (window.soundManager) {
-            window.soundManager.play('tap');
+          if (typeof gameSound !== 'undefined') {
+            gameSound.playTap();
           }
           
           // 触覚フィードバック（対応デバイスのみ）
@@ -362,10 +360,10 @@
     // 音量ボタンの表示更新
     function updateSoundButton() {
       const soundToggle = document.getElementById('soundToggle');
-      if (soundToggle && window.soundManager) {
-        soundToggle.textContent = window.soundManager.enabled ? '🔊' : '🔇';
+      if (soundToggle && typeof gameSound !== 'undefined') {
+        soundToggle.textContent = gameSound.enabled ? '🔊' : '🔇';
         soundToggle.setAttribute('aria-label', 
-          window.soundManager.enabled ? 'サウンドをオフ' : 'サウンドをオン'
+          gameSound.enabled ? 'サウンドをオフ' : 'サウンドをオン'
         );
       }
     }
