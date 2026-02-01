@@ -1,657 +1,743 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>ジグソーパズル - このみちゃんゲーム</title>
-  
-  <!-- 共通CSS -->
-  <link rel="stylesheet" href="css/common.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/animations.css">
-  
-  <style>
-    /* パズル専用スタイル */
-    body {
-      background: var(--bg-gradient-2);
-      overflow: hidden;
-    }
-
-    .puzzle-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0 16px;
-      height: 100vh;
-      position: relative;
-    }
-
-    /* ヘッダー */
-    .puzzle-header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: calc(var(--safe-top) + 16px) 0 16px;
-    }
-
-    .back-btn, .sound-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-full);
-      border: none;
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow-md);
-      cursor: pointer;
-      transition: transform 0.1s;
-      background: white;
-    }
-
-    .back-btn:active, .sound-btn:active {
-      transform: scale(0.95);
-    }
-
-    .sound-btn {
-      background: var(--primary-pink);
-    }
-
-    .timer {
-      font-size: 20px;
-      font-weight: bold;
-      color: var(--text-primary);
-      font-family: 'Courier New', monospace;
-    }
-
-    /* 難易度表示 */
-    .difficulty {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-
-    /* パズルエリア */
-    .puzzle-area {
-      position: relative;
-      width: 360px;
-      height: 360px;
-      margin: 16px 0;
-      background: white;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      overflow: hidden;
-    }
-
-    .puzzle-canvas {
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    /* ピース */
-    .puzzle-piece {
-      position: absolute;
-      cursor: grab;
-      transition: transform 0.2s, box-shadow 0.2s;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      box-sizing: border-box;
-    }
-
-    .puzzle-piece.dragging {
-      cursor: grabbing;
-      z-index: 1000;
-      transform: scale(1.05);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-      transition: none;
-    }
-
-    .puzzle-piece.near-target {
-      box-shadow: 0 0 16px var(--primary-yellow);
-    }
-
-    .puzzle-piece.placed {
-      pointer-events: none;
-      border: 1px solid rgba(0, 255, 0, 0.3);
-    }
-
-    /* リスタートボタン */
-    .restart-btn {
-      margin-top: 16px;
-      padding: 12px 32px;
-      font-size: 16px;
-      font-weight: bold;
-      color: white;
-      background: linear-gradient(135deg, var(--primary-pink), #FF85B3);
-      border: none;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-
-    .restart-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* クリアモーダル */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      animation: fadeIn 0.3s;
-    }
-
-    .modal {
-      background: white;
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      width: 320px;
-      text-align: center;
-      box-shadow: var(--shadow-lg);
-      animation: bounceIn 0.6s;
-    }
-
-    .modal h2 {
-      font-size: 32px;
-      color: var(--primary-pink);
-      margin-bottom: 16px;
-    }
-
-    .modal .time-display {
-      font-size: 24px;
-      font-weight: bold;
-      color: var(--text-primary);
-      margin: 16px 0;
-      font-family: 'Courier New', monospace;
-    }
-
-    .modal .stars {
-      font-size: 48px;
-      margin: 16px 0;
-    }
-
-    .modal-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    .modal-buttons button {
-      padding: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-
-    .modal-buttons button:active {
-      transform: scale(0.95);
-    }
-
-    .modal-buttons .btn-primary {
-      background: linear-gradient(135deg, var(--primary-pink), #FF85B3);
-      color: white;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .modal-buttons .btn-secondary {
-      background: white;
-      color: var(--primary-pink);
-      border: 2px solid var(--primary-pink);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* 画像選択モーダル */
-    .image-select-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-
-    .image-select-content {
-      background: white;
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      width: 340px;
-      text-align: center;
-    }
-
-    .image-select-content h2 {
-      font-size: 24px;
-      color: var(--primary-pink);
-      margin-bottom: 24px;
-    }
-
-    .image-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .image-option {
-      aspect-ratio: 1;
-      border: 3px solid transparent;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      background: linear-gradient(135deg, #FFE5F1, #D4E4FF);
-      transition: all 0.2s;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .image-option:active {
-      transform: scale(0.95);
-    }
-
-    .image-option:hover {
-      border-color: var(--primary-pink);
-    }
-
-    .image-option span {
-      font-size: 14px;
-      margin-top: 8px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#FF9EC8">
+    <title>🧩 このみちゃんのジグソーパズル</title>
+    
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/animations.css">
+    
+    <!-- ゲーム固有スタイル -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+            padding-top: calc(var(--safe-top) + 70px);
+            padding-bottom: calc(var(--safe-bottom) + var(--spacing-md));
+            overflow-y: auto;
+        }
+        
+        h1 {
+            color: var(--primary-pink);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-2xl);
+            animation: bounceIn 0.6s ease;
+        }
+        
+        .message {
+            font-size: var(--font-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+            animation: slideInDown 0.8s ease;
+        }
+        
+        .picture-select {
+            margin-bottom: var(--spacing-lg);
+            animation: slideInDown 0.9s ease;
+        }
+        
+        .picture-select .btn {
+            margin: var(--spacing-xs);
+            padding: 12px 24px;
+            font-size: var(--font-md);
+            background: white;
+            border: 3px solid var(--primary-pink);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .picture-select .btn:hover,
+        .picture-select .btn.active {
+            background: var(--primary-pink);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .preview-container {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+            animation: bounceIn 1s ease;
+        }
+        
+        .preview-container h3 {
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-lg);
+        }
+        
+        #preview {
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .game-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            animation: slideInUp 1.1s ease;
+        }
+        
+        .puzzle-area {
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .puzzle-area h2 {
+            text-align: center;
+            color: var(--primary-pink);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-xl);
+        }
+        
+        #puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 4px;
+            background: #333;
+            padding: 4px;
+            border-radius: var(--radius-md);
+        }
+        
+        .puzzle-slot {
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.3);
+            border-radius: var(--radius-sm);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .puzzle-slot.occupied {
+            background: transparent;
+        }
+        
+        .puzzle-slot.occupied canvas {
+            border-radius: var(--radius-sm);
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .puzzle-slot.correct {
+            box-shadow: 0 0 15px #4caf50;
+            animation: pulse 0.6s ease;
+        }
+        
+        #pieces-area {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 12px;
+            padding: var(--spacing-md);
+            background: #f5f5f5;
+            border-radius: var(--radius-md);
+            min-height: 340px;
+        }
+        
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            cursor: grab;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        
+        .puzzle-piece:hover {
+            transform: scale(1.08);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .puzzle-piece.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        
+        .puzzle-piece canvas {
+            border-radius: var(--radius-sm);
+        }
+    </style>
 </head>
 <body>
-  
-  <!-- 画像選択モーダル -->
-  <div class="image-select-modal" id="imageSelectModal">
-    <div class="image-select-content">
-      <h2>えをえらんでね！</h2>
-      <div class="image-grid">
-        <div class="image-option" data-image="cat">
-          <div>🐱</div>
-          <span>ねこ</span>
-        </div>
-        <div class="image-option" data-image="rainbow">
-          <div>🌈</div>
-          <span>にじ</span>
-        </div>
-        <div class="image-option" data-image="flower">
-          <div>🌸</div>
-          <span>おはな</span>
-        </div>
-        <div class="image-option" data-image="cake">
-          <div>🍰</div>
-          <span>ケーキ</span>
-        </div>
-      </div>
+    <button class="fixed-btn sound-btn" onclick="toggleSound()" id="soundBtn">🔊</button>
+    
+    <h1>🧩 このみちゃんのジグソーパズル</h1>
+    <p class="message">ピースをドラッグして、えをかんせいさせてね！</p>
+    
+    <div class="picture-select">
+        <button class="btn active" onclick="changePicture('cat')">🐱 ねこ</button>
+        <button class="btn" onclick="changePicture('rainbow')">🌈 にじ</button>
+        <button class="btn" onclick="changePicture('flower')">🌸 おはな</button>
+        <button class="btn" onclick="changePicture('cake')">🎂 ケーキ</button>
     </div>
-  </div>
-
-  <div class="puzzle-container">
-    <!-- ヘッダー -->
-    <div class="puzzle-header">
-      <button class="back-btn" id="backBtn" aria-label="もどる">←</button>
-      <div class="timer" id="timer">00:00</div>
-      <button class="sound-btn" id="soundBtn" aria-label="サウンド">🔊</button>
+    
+    <div class="preview-container">
+        <h3>👀 おてほん</h3>
+        <canvas id="preview" width="150" height="150"></canvas>
     </div>
-
-    <!-- 難易度 -->
-    <div class="difficulty">【かんたん】3×3</div>
-
-    <!-- パズルエリア -->
-    <div class="puzzle-area" id="puzzleArea">
-      <!-- ピースはJSで動的生成 -->
-    </div>
-
-    <!-- リスタートボタン -->
-    <button class="restart-btn" id="restartBtn">🔄 もういちど</button>
-  </div>
-
-  <!-- 共通JS -->
-  <script src="js/sound.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/particle.js"></script>
-
-  <script>
-    /**
-     * ジグソーパズル - メインロジック
-     */
     
-    const GRID_SIZE = 3; // 3×3
-    const PIECE_SIZE = 120; // 360px / 3
-    const SNAP_DISTANCE = 40; // スナップ距離
-    
-    let pieces = [];
-    let startTime = null;
-    let timerInterval = null;
-    let selectedImage = null;
-    
-    // 画像データ（絵文字ベース）
-    const images = {
-      cat: {
-        emoji: '🐱',
-        colors: ['#FFD6E8', '#FFA8D0', '#FF7AB8', '#FFD6E8', '#FFA8D0', '#FF7AB8', '#FFD6E8', '#FFA8D0', '#FF7AB8']
-      },
-      rainbow: {
-        emoji: '🌈',
-        colors: ['#FF9999', '#FFD699', '#FFFF99', '#99FF99', '#99D6FF', '#D699FF', '#FFB3E6', '#FFD699', '#FFE699']
-      },
-      flower: {
-        emoji: '🌸',
-        colors: ['#FFE6F0', '#FFD6E8', '#FFC6E0', '#FFE6F0', '#FFD6E8', '#FFC6E0', '#FFE6F0', '#FFD6E8', '#FFC6E0']
-      },
-      cake: {
-        emoji: '🍰',
-        colors: ['#FFF5E6', '#FFEACC', '#FFDFB3', '#FFF5E6', '#FFEACC', '#FFDFB3', '#FFF5E6', '#FFEACC', '#FFDFB3']
-      }
-    };
-    
-    // 初期化
-    function init() {
-      setupEventListeners();
-      showImageSelect();
-    }
-    
-    // 画像選択モーダル表示
-    function showImageSelect() {
-      const modal = document.getElementById('imageSelectModal');
-      modal.style.display = 'flex';
-      
-      document.querySelectorAll('.image-option').forEach(option => {
-        option.addEventListener('click', () => {
-          gameSound.playTap();
-          selectedImage = option.dataset.image;
-          modal.style.display = 'none';
-          startGame();
-        });
-      });
-    }
-    
-    // ゲーム開始
-    function startGame() {
-      pieces = [];
-      const puzzleArea = document.getElementById('puzzleArea');
-      puzzleArea.innerHTML = '';
-      
-      // ピース生成
-      const imageData = images[selectedImage];
-      const positions = [];
-      
-      for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-          positions.push({ row, col });
-        }
-      }
-      
-      // シャッフル
-      const shuffledPositions = shuffle(positions);
-      
-      shuffledPositions.forEach((pos, index) => {
-        const piece = createPiece(index, pos.row, pos.col, imageData);
-        pieces.push(piece);
-        puzzleArea.appendChild(piece.element);
-      });
-      
-      // タイマー開始
-      startTimer();
-    }
-    
-    // ピース作成
-    function createPiece(index, targetRow, targetCol, imageData) {
-      const element = document.createElement('div');
-      element.className = 'puzzle-piece';
-      
-      // 初期位置（ランダム配置）
-      const startRow = Math.floor(index / GRID_SIZE);
-      const startCol = index % GRID_SIZE;
-      
-      // スタイル
-      element.style.width = PIECE_SIZE + 'px';
-      element.style.height = PIECE_SIZE + 'px';
-      element.style.left = (startCol * PIECE_SIZE) + 'px';
-      element.style.top = (startRow * PIECE_SIZE) + 'px';
-      element.style.background = imageData.colors[targetRow * GRID_SIZE + targetCol];
-      
-      // 絵文字を中央に配置
-      const emojiSpan = document.createElement('span');
-      emojiSpan.textContent = imageData.emoji;
-      emojiSpan.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 80px;
-        width: 100%;
-        height: 100%;
-        opacity: 0.8;
-      `;
-      element.appendChild(emojiSpan);
-      
-      const piece = {
-        element,
-        currentX: startCol * PIECE_SIZE,
-        currentY: startRow * PIECE_SIZE,
-        targetX: targetCol * PIECE_SIZE,
-        targetY: targetRow * PIECE_SIZE,
-        isPlaced: false,
-        dragStartX: 0,
-        dragStartY: 0,
-        dragOffsetX: 0,
-        dragOffsetY: 0
-      };
-      
-      // ドラッグイベント
-      element.addEventListener('touchstart', (e) => handleDragStart(e, piece), { passive: false });
-      element.addEventListener('touchmove', (e) => handleDragMove(e, piece), { passive: false });
-      element.addEventListener('touchend', (e) => handleDragEnd(e, piece), { passive: false });
-      
-      return piece;
-    }
-    
-    // ドラッグ開始
-    function handleDragStart(e, piece) {
-      if (piece.isPlaced) return;
-      e.preventDefault();
-      
-      const touch = e.touches[0];
-      piece.dragStartX = touch.clientX;
-      piece.dragStartY = touch.clientY;
-      piece.dragOffsetX = piece.currentX;
-      piece.dragOffsetY = piece.currentY;
-      
-      piece.element.classList.add('dragging');
-      gameSound.playTap();
-    }
-    
-    // ドラッグ中
-    function handleDragMove(e, piece) {
-      if (piece.isPlaced) return;
-      e.preventDefault();
-      
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - piece.dragStartX;
-      const deltaY = touch.clientY - piece.dragStartY;
-      
-      piece.currentX = piece.dragOffsetX + deltaX;
-      piece.currentY = piece.dragOffsetY + deltaY;
-      
-      // 境界チェック
-      piece.currentX = clamp(piece.currentX, 0, 360 - PIECE_SIZE);
-      piece.currentY = clamp(piece.currentY, 0, 360 - PIECE_SIZE);
-      
-      piece.element.style.left = piece.currentX + 'px';
-      piece.element.style.top = piece.currentY + 'px';
-      
-      // スナップ判定（視覚フィードバック）
-      const dist = distance(
-        { x: piece.currentX, y: piece.currentY },
-        { x: piece.targetX, y: piece.targetY }
-      );
-      
-      if (dist < SNAP_DISTANCE) {
-        piece.element.classList.add('near-target');
-      } else {
-        piece.element.classList.remove('near-target');
-      }
-    }
-    
-    // ドラッグ終了
-    function handleDragEnd(e, piece) {
-      if (piece.isPlaced) return;
-      e.preventDefault();
-      
-      piece.element.classList.remove('dragging');
-      
-      // スナップ判定
-      const dist = distance(
-        { x: piece.currentX, y: piece.currentY },
-        { x: piece.targetX, y: piece.targetY }
-      );
-      
-      if (dist < SNAP_DISTANCE) {
-        // スナップ
-        piece.currentX = piece.targetX;
-        piece.currentY = piece.targetY;
-        piece.element.style.left = piece.targetX + 'px';
-        piece.element.style.top = piece.targetY + 'px';
-        piece.isPlaced = true;
-        piece.element.classList.add('placed');
-        piece.element.classList.remove('near-target');
+    <div class="game-container">
+        <div class="puzzle-area">
+            <h2>ここにおいてね</h2>
+            <div id="puzzle-board"></div>
+        </div>
         
-        gameSound.playSnap();
-        createSparkle(
-          piece.element.offsetLeft + PIECE_SIZE / 2,
-          piece.element.offsetTop + PIECE_SIZE / 2 + 100
-        );
-        
-        // 完成チェック
-        checkComplete();
-      }
-    }
+        <div class="puzzle-area">
+            <h2>ピース</h2>
+            <div id="pieces-area"></div>
+        </div>
+    </div>
     
-    // 完成チェック
-    function checkComplete() {
-      const allPlaced = pieces.every(p => p.isPlaced);
-      if (allPlaced) {
-        setTimeout(() => {
-          stopTimer();
-          showClearModal();
-        }, 300);
-      }
-    }
-    
-    // タイマー開始
-    function startTimer() {
-      startTime = Date.now();
-      timerInterval = setInterval(updateTimer, 100);
-    }
-    
-    // タイマー更新
-    function updateTimer() {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      document.getElementById('timer').textContent = formatTime(elapsed);
-    }
-    
-    // タイマー停止
-    function stopTimer() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    }
-    
-    // クリアモーダル表示
-    function showClearModal() {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      
-      gameSound.playClear();
-      createConfetti(document.body, 50);
-      
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.innerHTML = `
+    <!-- クリアモーダル -->
+    <div class="modal-overlay" id="celebration" style="display: none;">
         <div class="modal">
-          <h2>🎉 やったね！ 🎉</h2>
-          <div class="time-display">クリアタイム<br>${formatTime(elapsed)}</div>
-          <div class="stars">⭐⭐⭐</div>
-          <div class="modal-buttons">
-            <button class="btn-primary" id="playAgainBtn">もういちど</button>
-            <button class="btn-secondary" id="backToMenuBtn">もどる</button>
-          </div>
+            <div style="font-size: 4em; margin: 15px;">🎉</div>
+            <h2>かんせい！！</h2>
+            <p>このみちゃん、すごーい！<br>じょうずにできたね！✨</p>
+            <div style="font-size: 3em; margin: 15px; animation: bounce 1s ease infinite;">👏🌟👏</div>
+            <button class="btn btn-primary" onclick="startGame()">もういっかいあそぶ</button>
         </div>
-      `;
-      
-      document.body.appendChild(overlay);
-      
-      // ボタンイベント
-      document.getElementById('playAgainBtn').addEventListener('click', () => {
-        gameSound.playTap();
-        overlay.remove();
-        showImageSelect();
-      });
-      
-      document.getElementById('backToMenuBtn').addEventListener('click', () => {
-        gameSound.playTap();
-        window.location.href = 'index.html';
-      });
-    }
+    </div>
     
-    // イベントリスナー設定
-    function setupEventListeners() {
-      // 戻るボタン
-      document.getElementById('backBtn').addEventListener('click', () => {
-        gameSound.playTap();
-        if (confirm('ゲームをやめてもどりますか？')) {
-          window.location.href = 'index.html';
+    <!-- 共通JS -->
+    <script src="./js/sound.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/particle.js"></script>
+    
+    <!-- ゲームロジック -->
+    <script>
+        // Picture drawing functions
+        const pictures = {
+            cat: (ctx, size) => {
+                // Background
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Body
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.ellipse(size/2, size*0.7, size*0.35, size*0.25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(size/2, size*0.4, size*0.28, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ears
+                ctx.beginPath();
+                ctx.moveTo(size*0.25, size*0.25);
+                ctx.lineTo(size*0.35, size*0.1);
+                ctx.lineTo(size*0.45, size*0.25);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(size*0.55, size*0.25);
+                ctx.lineTo(size*0.65, size*0.1);
+                ctx.lineTo(size*0.75, size*0.25);
+                ctx.fill();
+                
+                // Inner ears
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.moveTo(size*0.3, size*0.23);
+                ctx.lineTo(size*0.35, size*0.15);
+                ctx.lineTo(size*0.4, size*0.23);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(size*0.6, size*0.23);
+                ctx.lineTo(size*0.65, size*0.15);
+                ctx.lineTo(size*0.7, size*0.23);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.ellipse(size*0.38, size*0.38, size*0.05, size*0.07, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(size*0.62, size*0.38, size*0.05, size*0.07, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye shine
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(size*0.36, size*0.36, size*0.02, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(size*0.6, size*0.36, size*0.02, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Nose
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.moveTo(size*0.5, size*0.45);
+                ctx.lineTo(size*0.45, size*0.5);
+                ctx.lineTo(size*0.55, size*0.5);
+                ctx.fill();
+                
+                // Mouth
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(size*0.5, size*0.5);
+                ctx.lineTo(size*0.5, size*0.55);
+                ctx.moveTo(size*0.43, size*0.55);
+                ctx.quadraticCurveTo(size*0.5, size*0.6, size*0.57, size*0.55);
+                ctx.stroke();
+                
+                // Whiskers
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1.5;
+                [[0.2, 0.45, 0.35, 0.47], [0.2, 0.5, 0.35, 0.5], [0.2, 0.55, 0.35, 0.53],
+                 [0.8, 0.45, 0.65, 0.47], [0.8, 0.5, 0.65, 0.5], [0.8, 0.55, 0.65, 0.53]].forEach(w => {
+                    ctx.beginPath();
+                    ctx.moveTo(size*w[0], size*w[1]);
+                    ctx.lineTo(size*w[2], size*w[3]);
+                    ctx.stroke();
+                });
+            },
+            
+            rainbow: (ctx, size) => {
+                // Sky
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Sun
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(size*0.85, size*0.15, size*0.12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Clouds
+                ctx.fillStyle = '#FFF';
+                [[0.15, 0.2], [0.5, 0.12], [0.8, 0.25]].forEach(c => {
+                    ctx.beginPath();
+                    ctx.arc(size*c[0], size*c[1], size*0.08, 0, Math.PI * 2);
+                    ctx.arc(size*c[0]+size*0.06, size*c[1]-size*0.03, size*0.06, 0, Math.PI * 2);
+                    ctx.arc(size*c[0]+size*0.1, size*c[1], size*0.07, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Rainbow
+                const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+                colors.forEach((color, i) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = size * 0.04;
+                    ctx.beginPath();
+                    ctx.arc(size*0.5, size*0.9, size*(0.6 - i*0.04), Math.PI, 0);
+                    ctx.stroke();
+                });
+                
+                // Grass
+                ctx.fillStyle = '#90EE90';
+                ctx.fillRect(0, size*0.85, size, size*0.15);
+            },
+            
+            flower: (ctx, size) => {
+                // Background
+                ctx.fillStyle = '#98FB98';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Stem
+                ctx.strokeStyle = '#228B22';
+                ctx.lineWidth = size * 0.04;
+                ctx.beginPath();
+                ctx.moveTo(size*0.5, size*0.55);
+                ctx.quadraticCurveTo(size*0.45, size*0.75, size*0.5, size*0.95);
+                ctx.stroke();
+                
+                // Leaves
+                ctx.fillStyle = '#32CD32';
+                ctx.beginPath();
+                ctx.ellipse(size*0.38, size*0.75, size*0.12, size*0.06, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(size*0.62, size*0.8, size*0.12, size*0.06, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Petals
+                ctx.fillStyle = '#FF69B4';
+                for (let i = 0; i < 8; i++) {
+                    ctx.save();
+                    ctx.translate(size*0.5, size*0.4);
+                    ctx.rotate(i * Math.PI / 4);
+                    ctx.beginPath();
+                    ctx.ellipse(0, -size*0.18, size*0.1, size*0.18, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // Center
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(size*0.5, size*0.4, size*0.12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Face
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(size*0.45, size*0.38, size*0.02, 0, Math.PI * 2);
+                ctx.arc(size*0.55, size*0.38, size*0.02, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(size*0.5, size*0.43, size*0.04, 0, Math.PI);
+                ctx.stroke();
+            },
+            
+            cake: (ctx, size) => {
+                // Background
+                ctx.fillStyle = '#FFE4E1';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Plate
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.ellipse(size*0.5, size*0.9, size*0.45, size*0.08, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#DDD';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Bottom layer
+                ctx.fillStyle = '#DEB887';
+                ctx.fillRect(size*0.15, size*0.65, size*0.7, size*0.2);
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(size*0.15, size*0.6, size*0.7, size*0.08);
+                
+                // Top layer
+                ctx.fillStyle = '#DEB887';
+                ctx.fillRect(size*0.25, size*0.4, size*0.5, size*0.2);
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(size*0.25, size*0.35, size*0.5, size*0.08);
+                
+                // Frosting drips
+                ctx.fillStyle = '#FFF';
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.arc(size*(0.2 + i*0.15), size*0.6, size*0.04, 0, Math.PI);
+                    ctx.fill();
+                }
+                
+                // Candle
+                ctx.fillStyle = '#FF6347';
+                ctx.fillRect(size*0.47, size*0.2, size*0.06, size*0.15);
+                
+                // Flame
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.moveTo(size*0.5, size*0.1);
+                ctx.quadraticCurveTo(size*0.55, size*0.15, size*0.5, size*0.2);
+                ctx.quadraticCurveTo(size*0.45, size*0.15, size*0.5, size*0.1);
+                ctx.fill();
+                
+                // Strawberries
+                ctx.fillStyle = '#FF0000';
+                [[0.3, 0.35], [0.5, 0.33], [0.7, 0.35]].forEach(s => {
+                    ctx.beginPath();
+                    ctx.arc(size*s[0], size*s[1], size*0.04, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Strawberry leaves
+                ctx.fillStyle = '#228B22';
+                [[0.3, 0.32], [0.5, 0.30], [0.7, 0.32]].forEach(s => {
+                    ctx.beginPath();
+                    ctx.moveTo(size*s[0], size*s[1]);
+                    ctx.lineTo(size*s[0]-0.02*size, size*s[1]-0.03*size);
+                    ctx.lineTo(size*s[0]+0.02*size, size*s[1]-0.03*size);
+                    ctx.fill();
+                });
+            }
+        };
+        
+        let currentPicture = 'cat';
+        let pieces = [];
+        let placedPieces = Array(9).fill(null);
+        let draggedPiece = null;
+        
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
         }
-      });
-      
-      // サウンドボタン
-      const soundBtn = document.getElementById('soundBtn');
-      soundBtn.addEventListener('click', () => {
-        const enabled = gameSound.toggle();
-        soundBtn.textContent = enabled ? '🔊' : '🔇';
-        gameSound.playTap();
-      });
-      
-      // リスタートボタン
-      document.getElementById('restartBtn').addEventListener('click', () => {
-        gameSound.playTap();
-        if (confirm('さいしょからやりなおしますか？')) {
-          stopTimer();
-          showImageSelect();
+        
+        function drawPicture(ctx, picture, size) {
+            pictures[picture](ctx, size);
         }
-      });
-    }
-    
-    // 画面向き固定
-    lockPortrait();
-    
-    // 初期化実行
-    init();
-  </script>
+        
+        function createPieces() {
+            const size = 300;
+            const pieceSize = 100;
+            
+            // Draw full picture
+            const fullCanvas = document.createElement('canvas');
+            fullCanvas.width = size;
+            fullCanvas.height = size;
+            const fullCtx = fullCanvas.getContext('2d');
+            drawPicture(fullCtx, currentPicture, size);
+            
+            // Draw preview
+            const preview = document.getElementById('preview');
+            const previewCtx = preview.getContext('2d');
+            previewCtx.clearRect(0, 0, 150, 150);
+            previewCtx.drawImage(fullCanvas, 0, 0, 150, 150);
+            
+            // Create pieces
+            pieces = [];
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const pieceCanvas = document.createElement('canvas');
+                    pieceCanvas.width = pieceSize;
+                    pieceCanvas.height = pieceSize;
+                    const pieceCtx = pieceCanvas.getContext('2d');
+                    
+                    pieceCtx.drawImage(
+                        fullCanvas,
+                        col * pieceSize, row * pieceSize, pieceSize, pieceSize,
+                        0, 0, pieceSize, pieceSize
+                    );
+                    
+                    pieces.push({
+                        canvas: pieceCanvas,
+                        correctIndex: row * 3 + col
+                    });
+                }
+            }
+            
+            return shuffle(pieces);
+        }
+        
+        function startGame() {
+            document.getElementById('celebration').style.display = 'none';
+            placedPieces = Array(9).fill(null);
+            
+            const shuffledPieces = createPieces();
+            
+            // Create board slots
+            const board = document.getElementById('puzzle-board');
+            board.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'puzzle-slot';
+                slot.dataset.index = i;
+                slot.addEventListener('dragover', handleDragOver);
+                slot.addEventListener('drop', handleDrop);
+                board.appendChild(slot);
+            }
+            
+            // Create draggable pieces
+            const piecesArea = document.getElementById('pieces-area');
+            piecesArea.innerHTML = '';
+            shuffledPieces.forEach((piece, i) => {
+                const pieceEl = document.createElement('div');
+                pieceEl.className = 'puzzle-piece';
+                pieceEl.draggable = true;
+                pieceEl.dataset.correctIndex = piece.correctIndex;
+                pieceEl.appendChild(piece.canvas);
+                
+                pieceEl.addEventListener('dragstart', handleDragStart);
+                pieceEl.addEventListener('dragend', handleDragEnd);
+                
+                // Touch support
+                pieceEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+                pieceEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+                pieceEl.addEventListener('touchend', handleTouchEnd);
+                
+                piecesArea.appendChild(pieceEl);
+            });
+        }
+        
+        function handleDragStart(e) {
+            gameSound.playTap();
+            e.target.classList.add('dragging');
+            draggedPiece = e.target;
+            e.dataTransfer.setData('text/plain', e.target.dataset.correctIndex);
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedPiece = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const slot = e.target.closest('.puzzle-slot');
+            if (!slot || slot.querySelector('canvas')) return;
+            
+            const correctIndex = parseInt(draggedPiece.dataset.correctIndex);
+            const slotIndex = parseInt(slot.dataset.index);
+            
+            // Copy canvas with content
+            const sourceCanvas = draggedPiece.querySelector('canvas');
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = sourceCanvas.width;
+            newCanvas.height = sourceCanvas.height;
+            const ctx = newCanvas.getContext('2d');
+            ctx.drawImage(sourceCanvas, 0, 0);
+            
+            slot.appendChild(newCanvas);
+            slot.classList.add('occupied');
+            
+            placedPieces[slotIndex] = correctIndex;
+            
+            // Check if correct
+            if (correctIndex === slotIndex) {
+                slot.classList.add('correct');
+                gameSound.playCorrect();
+            } else {
+                gameSound.playSnap();
+            }
+            
+            // Remove from pieces area
+            draggedPiece.remove();
+            
+            checkWin();
+        }
+        
+        // Touch handlers for mobile
+        let touchPiece = null;
+        let touchClone = null;
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            touchPiece = e.target.closest('.puzzle-piece');
+            if (!touchPiece) return;
+            
+            gameSound.playTap();
+            touchPiece.classList.add('dragging');
+            
+            touchClone = touchPiece.cloneNode(true);
+            touchClone.style.position = 'fixed';
+            touchClone.style.pointerEvents = 'none';
+            touchClone.style.zIndex = '1000';
+            touchClone.style.opacity = '0.8';
+            document.body.appendChild(touchClone);
+            
+            const touch = e.touches[0];
+            touchClone.style.left = touch.clientX - 50 + 'px';
+            touchClone.style.top = touch.clientY - 50 + 'px';
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!touchClone) return;
+            
+            const touch = e.touches[0];
+            touchClone.style.left = touch.clientX - 50 + 'px';
+            touchClone.style.top = touch.clientY - 50 + 'px';
+        }
+        
+        function handleTouchEnd(e) {
+            if (!touchPiece || !touchClone) return;
+            
+            const touch = e.changedTouches[0];
+            const slot = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.puzzle-slot');
+            
+            if (slot && !slot.querySelector('canvas')) {
+                const correctIndex = parseInt(touchPiece.dataset.correctIndex);
+                const slotIndex = parseInt(slot.dataset.index);
+                
+                // Copy canvas with content
+                const sourceCanvas = touchPiece.querySelector('canvas');
+                const newCanvas = document.createElement('canvas');
+                newCanvas.width = sourceCanvas.width;
+                newCanvas.height = sourceCanvas.height;
+                const ctx = newCanvas.getContext('2d');
+                ctx.drawImage(sourceCanvas, 0, 0);
+                
+                slot.appendChild(newCanvas);
+                slot.classList.add('occupied');
+                
+                placedPieces[slotIndex] = correctIndex;
+                
+                if (correctIndex === slotIndex) {
+                    slot.classList.add('correct');
+                    gameSound.playCorrect();
+                } else {
+                    gameSound.playSnap();
+                }
+                
+                touchPiece.remove();
+                checkWin();
+            }
+            
+            touchPiece.classList.remove('dragging');
+            touchClone.remove();
+            touchPiece = null;
+            touchClone = null;
+        }
+        
+        function checkWin() {
+            const allCorrect = placedPieces.every((val, idx) => val === idx);
+            if (allCorrect) {
+                setTimeout(() => {
+                    gameSound.playClear();
+                    document.getElementById('celebration').style.display = 'flex';
+                    createConfetti();
+                }, 400);
+            }
+        }
+        
+        function createConfetti() {
+            const emojis = ['🎉', '⭐', '✨', '🌟', '💖', '🎊', '🧩', '👏'];
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'fixed';
+                    confetti.style.fontSize = '1.5em';
+                    confetti.style.zIndex = '1001';
+                    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-30px';
+                    confetti.style.animation = 'confetti 3s linear forwards';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 40);
+            }
+        }
+        
+        function changePicture(picture) {
+            currentPicture = picture;
+            document.querySelectorAll('.picture-select .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            gameSound.playTap();
+            startGame();
+        }
+        
+        function toggleSound() {
+            const enabled = gameSound.toggle();
+            document.getElementById('soundBtn').textContent = enabled ? '🔊' : '🔇';
+        }
+        
+        // Initialize
+        startGame();
+    </script>
 </body>
 </html>
