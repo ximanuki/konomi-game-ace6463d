@@ -333,16 +333,16 @@
             }
         });
 
-        // 判定
+        // 判定（6歳児向けに寛容な設定）
         function judge(noteData, diff) {
             let judgeType, points;
             
-            if (diff < 30) {
+            if (diff < 50) {
                 judgeType = 'perfect';
                 points = 10;
                 perfectCount++;
                 gameSound.playJudge('perfect');
-            } else if (diff < 60) {
+            } else if (diff < 100) {
                 judgeType = 'good';
                 points = 5;
                 gameSound.playJudge('good');
